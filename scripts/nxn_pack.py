@@ -1159,6 +1159,32 @@ def step_guest(patched, mods, stage):
     say('Frameworks/Guest.framework: %d bytes' % n)
 
 
+TEXT_SUFFIXES = ('.tsv', '.txt', '.json')   # the formats the host parses line by line
+
+
+def normalize_text(app):
+    """Rewrite the staged tree's text files with LF endings.
+
+    Every tool in this chain writes its tables in Python's text mode, which on Windows ends the lines with CRLF. Most of the
+    host's readers go through scanf or split on whitespace and never notice, but two compare whole lines: the shader library
+    stamp (inputs.tsv, read for game and digest) and the pipeline prewarm lists (pso_manifest.tsv / pso_user.tsv, compared
+    line by line with what the game creates). With a CR in them the c1_full.tsv / cb_extent.tsv tables are taken as stale
+    ("every c1 gets its own 64 KiB", uniform reads reach the whole binding) and no pipeline is ever warmed up. Rewriting them
+    here keeps every writer as it is and makes the package identical whatever wrote it.
+    """
+    n = 0
+    for p in app.rglob('*'):
+        if not p.is_file() or p.suffix.lower() not in TEXT_SUFFIXES: continue
+        try:
+            b = p.read_bytes()
+        except OSError:
+            continue
+        if b'\r\n' not in b: continue
+        p.write_bytes(b.replace(b'\r\n', b'\n'))
+        n += 1
+    if n: say('text files written with LF endings: %d (CRLF breaks the shader library stamp and the prewarm lists)' % n)
+
+
 def env_for(rows):
     """The profile keys the shell cannot carry in its compiled-in header, as dm/env.txt lines.
 
@@ -1335,6 +1361,7 @@ def step_assemble(shell, stage, game, patched, mods, gdir, rows, name, version, 
     if env_lines:
         (A / 'dm' / 'env.txt').write_text('\n'.join(env_lines) + '\n', encoding='utf-8')
         say('dm/env.txt: ' + ', '.join(env_lines))
+    normalize_text(A)
 
     # App identity: name, version, bundle ID, icon.
     #
@@ -1462,6 +1489,11 @@ def main():
                          'modules and the shaders (it is several times the size of the game)')
     ap.add_argument('--clean', default='', metavar='NSP_FOLDER',
                     help='remove the working folder an earlier run left in NSP_FOLDER, and exit')
+    ap.add_argument('--work-dir', default='', metavar='FOLDER',
+                    help='put the working folder (<tid>_pack: the extraction, the rewritten modules, the shader build) '
+                         'here instead of beside the NSPs, e.g. on an SSD when the games live on a slow disk')
+    ap.add_argument('--name', default='', metavar='TITLE',
+                    help='the name the app shows on the home screen (default: the profile\'s name row)')
     ap.add_argument('--tools', default=os.environ.get('NXN_TOOLS', ''),
                     help='folder holding the nx_extract, dmsh_xlate, spirv-cross, glslangValidator and zstd executables '
                          '(the windows-tools CI artifact, packed as nxnative-windows-tools.zip). They are put on PATH and '
@@ -1612,7 +1644,7 @@ def main():
         (', update %s' % fam['updates'][pkg].name) if pkg != 'v0' and pkg in fam['updates'] else ', no update')
         + (('; %d DLC' % len(fam['dlc'])) if fam['dlc'] else ''))
 
-    work = folder / (tid + '_pack')
+    work = (Path(a.work_dir).resolve() if a.work_dir else folder) / (tid + '_pack')
     work.mkdir(parents=True, exist_ok=True)
     (work / 'logs').mkdir(exist_ok=True)
     if probed and (probed / 'extract').is_dir():
@@ -1873,8 +1905,9 @@ def main():
     if a.stop_after == 'guest': return say('stopped before assembly')
 
     stage = work / 'stage'
+    # --name overrides the profile's name row: the app the home screen shows, Info.plist's display name and the IPA's file name
     A = step_assemble(shell, stage, game, patched, mods, gdir, rows,
-                      one(rows, 'name', tid), builds[pkg], tid, msl_out, work, aoc_dir)
+                      a.name or one(rows, 'name', tid), builds[pkg], tid, msl_out, work, aoc_dir)
     if vk_out is not None:
         dst = A / 'msl' / 'vk'
         shutil.rmtree(dst, ignore_errors=True)
