@@ -18,7 +18,7 @@ on:
         description: 'Tree to build from (upstream = latest nxnative + this fork''s files, fork = this snapshot)'
         type: choice
         options: [upstream, fork]
-        default: fork
+        default: upstream
       publish:
         description: 'Publish a release (leave off to only build the artifacts)'
         type: boolean
@@ -226,7 +226,7 @@ jobs:
       - name: Assemble the source tree
         id: tree
         env:
-          REQUESTED: ${{ inputs.source || 'fork' }}   # upstream by default: this repository only carries the diff
+          REQUESTED: ${{ inputs.source || 'upstream' }}   # upstream by default: this repository only carries the diff
         run: |
           # keep this step's output too: a failure here happens before the build log exists
           exec > >(tee "$RUNNER_TEMP/shell.out") 2>&1
@@ -236,6 +236,11 @@ jobs:
           if [ "$source" = upstream ]; then
             echo "::group::fetch upstream"
             git clone --depth 1 https://github.com/seedds/nxnative.git up
+            # Private build: pin upstream to the commit .shell-base.txt names, so the shell and the packer
+            # tree this IPA was packed with are one upstream commit (the patches below were made against it).
+            BASE=$(grep -oE '^[0-9a-f]{40}' fork/.shell-base.txt | head -1)
+            [ -n "$BASE" ] || { echo "::error::.shell-base.txt names no commit"; exit 1; }
+            git -C up fetch --depth 1 origin "$BASE" && git -C up checkout -q FETCH_HEAD
             UP=$(git -C up rev-parse HEAD)
             echo "upstream commit $UP"
             # Apply this fork onto the upstream tree. Files this fork adds are copied; files it modifies are patched, so an
