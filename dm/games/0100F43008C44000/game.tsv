@@ -28,6 +28,7 @@ modules	main sdk
 # fork has no Mac build step at all. So it fails on Windows, Linux and macOS alike; supported_list.py marks the row
 # from this key.
 needs_mac_shaders	1
+
 romfs_marker	arc/data.trpfs
 zip_store	.bnk:.pck:.trpfd:.trpfs:.metallib
 

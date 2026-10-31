@@ -33,6 +33,7 @@ modules	main subsdk0 sdk
 # fork has no Mac build step at all. So it fails on Windows, Linux and macOS alike; supported_list.py marks the row
 # from this key.
 needs_mac_shaders	1
+
 romfs_marker	root_000.pkz
 zip_store	.avi:.pkz:.webm:.metallib
 
