@@ -206,6 +206,81 @@ mark in the supported list.
 
 Every other game on the supported list packs and plays from its own files, LÖVE and Vulkan titles included.
 
+## Memory budget: pack for the device, not for the Switch
+
+`profile_guess.py` and every hand-made profile size the guest for a 4 GB Switch — `app_pool 0xCD500000` (3,285 MiB), and
+a 5 GB block on the virtual-address-memory path. That stays the right default: an IPA whose entitlement was dropped
+(Sideloadly, an old SideStore) runs under iOS's 3,375 MB cap, and a bigger pool only gets the game killed sooner. On a
+device that does keep the entitlement and has the RAM, those same numbers leave 4–6 GB unused. So the pack follows the
+device it is for:
+
+| Target device | `mem_reserve` | `app_pool` | Rule |
+|---|---|---|---|
+| no entitlement (3,375 MB) | the profile's | the profile's | **never relax**: the game sizes its heap from the pool and is killed with no crash log |
+| 8 GB phone (≈6 GB available) | the profile's | the profile's | leave it — the physical headroom does not hold a bigger pool |
+| 12–16 GB, `increased-memory-limit` only | `0x180000000` (6 GB) | `0x110000000` (4.25 GB) | the standard relaxation, for heap-setting games |
+| 16 GB, with `extended-virtual-addressing` | up to `0x280000000` (10 GB) | per the layout table | private packages only: EVA is a paid-account entitlement and the shell does not request it |
+
+Read the device, not the model: `boot: memory limit N MB` in `Documents/log.txt` says which row applies (about
+3,375 MB = no entitlement, 6 GB and up = in effect), and `[nvn-mtl] memory up to frame N … headroom to the system memory
+limit` says how much of it the game actually needs.
+
+### Keep the partition consistent
+
+The guest block is one `mmap` (`hle_svc.c` `mem_init`), partitioned front / alias / stack / heap, and the heap region is
+whatever is left:
+
+```
+0x10000000 (front) + mem_alias + mem_stack + heap region == mem_reserve
+app_pool ≤ heap region
+```
+
+Both are checked at run time: a pool larger than the heap region makes `SetHeapSize` return `0xD001` and
+`nninitStartup` aborts, and a `mem_reserve` past 6 GB without EVA dies at `reserve guest AS` — one line in the log,
+before the game starts.
+
+### The two layouts
+
+`sys_resource` in the game's profile is the switch: non-zero means virtual address memory, and such a game maps its own
+address regions in the alias region, often without ever setting a heap.
+
+| Key | Heap-setting game, 6 GB | Heap-setting game, 8 GB (EVA) | Virtual address memory, unchanged | Virtual address memory, 10 GB (EVA) |
+|---|---|---|---|---|
+| `mem_reserve` | `0x180000000` | `0x200000000` | `0x140000000` | `0x280000000` |
+| `mem_alias` | `0x40000000` | `0x40000000` | `0x118000000` | `0x140000000` |
+| `mem_stack` | `0x10000000` | `0x10000000` | `0x10000000` | `0x10000000` |
+| `app_pool` | `0x110000000` | `0x180000000` | the profile's | `0x100000000` |
+| heap region (derived) | 4.5 GB | 6.5 GB | 128 MB | 4.5 GB |
+
+At 6 GB a virtual-address-memory game has nothing to give: its alias region alone is 4.375 GB on Engage's profile, so
+relaxing the block for it means cutting the alias region under 1 GB, which aborts it in
+`StandardAllocator::Initialize`. Those games get more room only with EVA (the last column).
+
+`0x110000000` is exactly the heap region of the 6 GB block — the ceiling of the formula above, not a value with slack.
+
+### Do not relax these
+
+- **Unreal 4.26+ with an NPDM system resource** (`mem_reserve 0x1028000000`, `mem_alias 0x1000000000`): its
+  `FMallocBinned3` reserves 37 GB of the 62 GB region, which no block size a phone can reserve will hold. This
+  fork's rewriter cuts the allocator itself (`dm/tools/ue_malloc.py`), so what such a game still needs is the capped
+  address region (game_args, as Octopath Traveler 0's profile does), not a bigger block.
+- **Tears of the Kingdom / Breath of the Wild**: an 8 GB alias region was measured to move the high-water mark without
+  removing the shortage. Relax their `app_pool` if anything, not the alias region.
+- **Profiles with `mem_map_limit on`** (Pokémon Legends: Z-A): the pool also caps `MapPhysicalMemory`, so a bigger pool
+  relaxes that limit too and drives the footprint into the jetsam kill the game was avoiding.
+
+### Where the values go
+
+The packer writes `mem_reserve` / `mem_alias` / `mem_stack` / `app_pool` from `dm/games/<title ID>/game.tsv` into the
+app's `dm/env.txt` as `DM_MEM_RESERVE` / `DM_MEM_ALIAS` / `DM_MEM_STACK` / `DM_APP_POOL` (`nxn_pack.py`), and the host
+reads them at start. So relax in the profile before packing; to try a layout on a device without repacking, put the same
+`DM_*` lines in `Documents/env.txt`, which wins over the bundle's copy. Then check:
+
+```
+[mem] guest AS 0x… +0x180000000  heap … alias … stack …   → the block the host reserved
+[mem] heap 4.19 GB (heap region 4.50 GB)                  → what the game asked for, and what it could have had
+```
+
 ## Notes and caveats
 
 - **The IPA contains your game files.** It is for your own use; do not distribute it.

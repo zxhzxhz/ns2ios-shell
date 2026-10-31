@@ -203,6 +203,76 @@ IPA。白跑的只有解包那一步，重试代价不大。这几款在支持�
 
 其余的游戏（含上面说的 LÖVE 和 Vulkan 类）都是**打一次直接玩**。
 
+## 内存预算：按设备出包，不是按 Switch
+
+`profile_guess.py` 和所有手写 profile 都按 4 GB Switch 出值 —— `app_pool 0xCD500000`（3,285 MiB），走虚拟地址内存那条
+路时是 5 GB 块。这仍然是正确的默认：entitlement 被丢掉的包（Sideloadly、老版本 SideStore）跑在 iOS 的 3,375 MB 上限下，
+池子报得越大，游戏只会更早被杀。而在**保住了 entitlement、内存也够**的设备上，同一套数值会白白空着 4–6 GB。所以出包按
+目标设备分档：
+
+| 目标设备 | `mem_reserve` | `app_pool` | 规则 |
+|---|---|---|---|
+| 无 entitlement（3,375 MB） | 用 profile 的 | 用 profile 的 | **一律不放宽**：游戏按池子定堆大小，超了是被系统杀掉，不留 crash 日志 |
+| 8 GB 手机（可用约 6 GB） | 用 profile 的 | 用 profile 的 | 保持原样 —— 物理余量扛不住更大的池 |
+| 12–16 GB，只有 `increased-memory-limit` | `0x180000000`（6 GB） | `0x110000000`（4.25 GB） | 标准放宽档，只适用于会设堆的游戏 |
+| 16 GB，且带 `extended-virtual-addressing` | 最多 `0x280000000`（10 GB） | 见下面的布局表 | 只用于私有包：EVA 是付费账号权限，壳默认不请求它 |
+
+看设备读数，不要看型号：`Documents/log.txt` 里的 `boot: memory limit N MB` 决定落在哪一行（约 3,375 MB = 没生效，
+6 GB 以上 = 已生效），`[nvn-mtl] memory up to frame N … headroom to the system memory limit` 则告诉你游戏实际要用多少。
+
+### 分区必须自洽
+
+整块来宾地址空间是一次 `mmap`（`hle_svc.c` 的 `mem_init`），切成前段 / alias / 栈 / 堆，堆区就是剩下的全部：
+
+```
+0x10000000（前段）+ mem_alias + mem_stack + 堆区 == mem_reserve
+app_pool ≤ 堆区
+```
+
+两条都在运行期检查：池大于堆区时 `SetHeapSize` 返回 `0xD001`、`nninitStartup` 直接 abort；没有 EVA 却把
+`mem_reserve` 写过 6 GB，会在 `reserve guest AS` 当场退出 —— 游戏启动前日志里只有一行。
+
+### 两种布局
+
+游戏 profile 里的 `sys_resource` 就是开关：非 0 表示虚拟地址内存，这类游戏自己在 alias 区里划地址区域，常常根本
+不设堆。
+
+| 键 | 会设堆的游戏，6 GB | 会设堆的游戏，8 GB（EVA） | 虚拟地址内存，不改 | 虚拟地址内存，10 GB（EVA） |
+|---|---|---|---|---|
+| `mem_reserve` | `0x180000000` | `0x200000000` | `0x140000000` | `0x280000000` |
+| `mem_alias` | `0x40000000` | `0x40000000` | `0x118000000` | `0x140000000` |
+| `mem_stack` | `0x10000000` | `0x10000000` | `0x10000000` | `0x10000000` |
+| `app_pool` | `0x110000000` | `0x180000000` | 用 profile 的 | `0x100000000` |
+| 堆区（推导） | 4.5 GB | 6.5 GB | 128 MB | 4.5 GB |
+
+6 GB 这一档对虚拟地址内存的游戏没有余量可给：Engage 的 profile 光 alias 就要 4.375 GB，把块放宽给它等于把 alias 压到
+1 GB 以下，它会在 `StandardAllocator::Initialize` 里 abort。这类游戏只有上了 EVA 才有额外空间（最后一列）。
+
+`0x110000000` 正好等于 6 GB 块的堆区 —— 它是上面那条公式的上限，不是留了余量的值。
+
+### 这几类不要动
+
+- **Unreal 4.26+ 且 NPDM 声明了 system resource**（`mem_reserve 0x1028000000` / `mem_alias 0x1000000000`）：它的
+  `FMallocBinned3` 要在 62 GB 区域里预留 37 GB，手机上没有任何块大小扶得住。本 fork 的 rewriter 已经自己把分配器裁掉
+  （`dm/tools/ue_malloc.py`），这类游戏还需要的是 cap 过的地址区域（game_args，照 Octopath Traveler 0 的 profile 做），
+  而不是更大的块。
+- **塞尔达传说 王国之泪 / 旷野之息**：实测把 alias 放到 8 GB 只是把高水位往后推，并没有消除内存短缺。要动就动
+  `app_pool`，别动 alias。
+- **开了 `mem_map_limit on` 的 profile**（宝可梦传说 Z-A）：池子同时也是 `MapPhysicalMemory` 的上限，放大池子等于放开映射
+  限制，会把 footprint 直接推进它本来在躲的 jetsam 击杀。
+
+### 这些值写在哪里
+
+打包器会把 `dm/games/<title ID>/game.tsv` 里的 `mem_reserve` / `mem_alias` / `mem_stack` / `app_pool` 写进包的
+`dm/env.txt`，键名是 `DM_MEM_RESERVE` / `DM_MEM_ALIAS` / `DM_MEM_STACK` / `DM_APP_POOL`（`nxn_pack.py`），宿主启动时读取。
+所以放宽是在打包前的 profile 里改；想在设备上试布局而不重打包，就把同样的 `DM_*` 行写进 `Documents/env.txt`，它优先于
+包里那份。然后核对：
+
+```
+[mem] guest AS 0x… +0x180000000  heap … alias … stack …   → 宿主真正预留的块
+[mem] heap 4.19 GB (heap region 4.50 GB)                  → 游戏要了多少，本来可以有多少
+```
+
 ## 注意事项
 
 - **IPA 里含你的游戏文件。** 仅供自己使用，不要分发。
