@@ -330,6 +330,13 @@ reads them at start. So relax in the profile before packing; to try a layout on 
 - **First launch takes a while**: the phone compiles every shader once. Hades II's 140 shaders take about 5 s; bigger titles
   take minutes (the progress page estimates). The system caches the result, so later launches start immediately.
 - To change a setting on the device without repacking, put `KEY=VALUE` lines in the app's `Documents/env.txt`.
+- **Cheats** (Atmosphère format): the launcher has a **Cheats** section. Paste the codes into it and every entry the text
+  defines shows up as its own switch — turn on "Infinite HP" without turning on "Infinite MP". The text is written to
+  `Documents/cheats/cheats.txt` and the switched-on names to the host, so the next launch keeps both. One app holds one
+  game, so the codes cannot be handed to another game by accident; they do belong to **this version** of it (the panel
+  names the version, and absolute addresses from another version can crash the game). On the iPhone only memory values
+  apply — the app's code pages are signed, so a code that patches instructions does nothing and says so in the log.
+  `DM_LAUNCHER=0` (in `Documents/env.txt`) skips the settings screen, and with it the switches.
 - If it crashes, the host writes `Documents/log.txt` — in almost every case that file names the reason.
 - Packing needs **disk space of roughly twice the NSP size**: the extracted RomFS, the staged app and the IPA coexist. The
   temporary files are then removed automatically (`--keep-work` / `--clean`, see above).

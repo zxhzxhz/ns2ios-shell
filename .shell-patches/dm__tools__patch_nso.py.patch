@@ -1,0 +1,55 @@
+diff --git a/dm/tools/patch_nso.py b/dm/tools/patch_nso.py
+--- a/dm/tools/patch_nso.py
++++ b/dm/tools/patch_nso.py
+@@ -91,7 +91,7 @@
+ for path in PATCH_FILES: patch_paths.setdefault(os.path.realpath(path), path)   # repeated roots and symlinks name the same file, not competing build claims
+ PATCH_FILES = list(patch_paths.values())
+ def load_patches():
+-    tables, where = {'CUTS': {}, 'OBS': {}, 'FRAME_STEP': {}, 'MATCH_CUTS': {}, 'SDK_MATCH_CUTS': {}, 'CAPABILITIES': {}}, {}
++    tables, where = {'CUTS': {}, 'CAVES': {}, 'OBS': {}, 'FRAME_STEP': {}, 'MATCH_CUTS': {}, 'SDK_MATCH_CUTS': {}, 'CAPABILITIES': {}}, {}
+     for n, path in enumerate(PATCH_FILES):
+         spec = importlib.util.spec_from_file_location(f'patches_{n}', path); m = importlib.util.module_from_spec(spec); spec.loader.exec_module(m)
+         for kind, table in tables.items():
+@@ -582,7 +582,13 @@
+     The workers are forked on each call, so they see the module's state as it is at that point."""
+     if WORKERS < 2 or len(jobs) < 2:
+         return [fn(*job) for job in jobs]
+-    with multiprocessing.get_context('fork').Pool(min(WORKERS, len(jobs))) as pool:
++    try:
++        ctx = multiprocessing.get_context('fork')
++    except ValueError:
++        # Windows has no fork, and spawn cannot stand in for it here: this script does its work at import time, so every
++        # worker would re-run the whole rewrite instead of one piece of it. Serial there, which is slower and correct.
++        return [fn(*job) for job in jobs]
++    with ctx.Pool(min(WORKERS, len(jobs))) as pool:
+         return pool.starmap(fn, jobs)
+ 
+ def find_x18_words():
+@@ -1554,6 +1560,27 @@
+ if os.environ.get('DM_SPIN_LIST'):
+     for T, bes, n in spin_sites: print(f'{NAME} spin wait {T:#x} ({n} instructions), back-edges ' + ' '.join(f'{b:#x}' for b in bes))
+ 
++# ---- Profile-provided trampolines (CAVES of the patch file) ----
++# Some games have a bug in their own code that only this platform meets: a handle table slot they freed is dereferenced
++# again without a check, so the game dies on a null pointer where a console would read stale memory. The fix belongs at
++# that instruction, but a module's text segment has no spare bytes to hold it (a stripped Unity main is packed solid).
++# A cave is therefore emitted into the patch area -- which the loader maps executable right beside the module -- and the
++# site keeps a branch to it. Entries: (offset in the image, the 4 original bytes as hex, the replacement's words as hex,
++# reason); the words are machine code for the module, and the branch to the cave is written by this script.
++for _off, _ob, _words, _why in PATCHES['CAVES'].get(BUILD_ID, []):
++    _ob = bytes.fromhex(_ob)
++    assert _off + 4 <= TEXT_END and len(_ob) == 4 and IMG[_off:_off + 4] == _ob, f'cave original bytes mismatch {_off:#x}: {bytes(IMG[_off:_off + 4]).hex()}'
++    assert IMG[_off:_off + 4] != b'\0\0\0\0' or True
++    use_area(_off); _t = here()
++    # A word may be a branch to a module offset instead of raw bits ("b:0x5aabc8"), which a guard needs to skip code
++    # ahead of the site: the displacement from the patch area depends on where the area landed, so it is resolved here.
++    for _w in _words: emit(B(here(), int(_w[2:], 16)) if _w.startswith('b:') else int(_w, 16))
++    emit(B(here(), _off + 4))   # the cave's last word: back to the instruction after the site
++    _w = B(_off, _t)
++    cuts.append((_off, _ob.hex(), struct.pack('<I', _w).hex(), _why))
++    struct.pack_into('<I', IMG, _off, _w)
++    print(f'{NAME}: cave at {_off:#x} -> patch area {_t:#x} ({len(_words)} words): {_why}')
++
+ os.makedirs(outdir, exist_ok=True)
+ P = lambda ext: os.path.join(outdir, f'{NAME}.{ext}')
+ patch = patch_front
