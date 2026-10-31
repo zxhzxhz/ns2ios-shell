@@ -420,7 +420,19 @@ def name_tid(p):
 
 def name_ver(p):
     m = re.search(r'\[v(\d+)\]', p.name)
-    return 'v' + m.group(1) if m else None
+    if m: return 'v' + m.group(1)
+    # Some dumps leave the v out of it: "… [0100EB500D92E800][1441792][UPD].nsp". Only read a bare number as a version
+    # when the name says it is an update; on any other file a bracketed number is a pack number (…[DLC 36]).
+    m = re.search(r'\[(\d{4,})\]', p.name)
+    if m and re.search(r'(UPD|Update|Patch)', p.name, re.I): return 'v' + m.group(1)
+    return None
+
+
+def safe_name(s):
+    """A profile version string as part of a file name. Windows refuses ? * : < > | " in a name, and an update whose
+    version could be read from neither the metadata nor the name is 'v?' -- packing such a game died on Windows at
+    'extract_v?.log' before this existed (on macOS the same name is legal, which is why upstream never met it)."""
+    return re.sub(r'[\\/:*?"<>|]', '_', str(s))
 
 
 def app_id(tid, kind):
@@ -531,7 +543,7 @@ def step_extract(nx, keys, folder, picks, work, versions, allow_damaged=False):
         base, upd = picks[ver]
         tmp = ex / (ver + '.partial')
         shutil.rmtree(tmp, ignore_errors=True)
-        run([nx, keys, base, upd if upd else '-', tmp] + (['--allow-damaged'] if allow_damaged else []), log=work / 'logs' / ('extract_%s.log' % ver),
+        run([nx, keys, base, upd if upd else '-', tmp] + (['--allow-damaged'] if allow_damaged else []), log=work / 'logs' / ('extract_%s.log' % safe_name(ver)),
             what='extracting %s (%s)' % (ver, base.name))
         # A previous run can leave <ver> behind without an ExeFS (an interrupted extraction, or one made before the folder
         # held an update as well), and a rename onto a non-empty directory fails on Windows. Clear it and take the new one.
@@ -626,8 +638,12 @@ def step_aoc(nx, keys, dlcs, work, tid, force=False, allow_damaged=False):
 
 
 # Files a derived profile leaves out: the build makes all of these again from the packed version's own files.
+#
+# patches.py: its tables are keyed by the build IDs of the profile it came from, and the repository's own file is loaded
+# anyway (dm/games/*/patches.py), so copying it into the derived profile only makes patch_nso.py see one build claimed in
+# two files, which stops the rewrite with an assertion. MATCH_CUTS keeps working: it is read from the repository's file.
 DERIVED_SKIP = {'game.tsv', 'shader_map.tsv', 'shader_facts.tsv', 'shader_pairs.tsv', 'c1_full.tsv', 'cb_extent.tsv',
-                'dmsh_chain.h', 'vk_capture.tsv'}
+                'dmsh_chain.h', 'vk_capture.tsv', 'patches.py'}
 
 
 def module_build_id(nso):
@@ -747,7 +763,7 @@ def load_rows(d):
 
 
 
-def check_free_space(folder, factor=3.5):
+def check_free_space(folder, factor=3.5, disk=None):
     """Refuse to start when the disk cannot hold the peak.
 
     Packing keeps three copies of the game on disk at once -- the extraction, the assembled app tree and the IPA -- which
@@ -757,14 +773,16 @@ def check_free_space(folder, factor=3.5):
     src = sum(p.stat().st_size for p in folder.iterdir()
               if p.is_file() and p.suffix.lower() in ('.nsp', '.xci', '.nsz'))
     if not src: return                       # nothing recognised yet: scan_nsps says so with a better message
-    need, free = int(src * factor), shutil.disk_usage(folder).free
+    # --work-dir keeps the extraction, the stage and the IPA on another disk: that is the one that has to hold the peak.
+    disk = disk or folder
+    need, free = int(src * factor), shutil.disk_usage(disk).free
     if free >= need:
         say('disk: %.1f GiB free, about %.1f GiB needed' % (free / 2**30, need / 2**30)); return
     die('not enough space on the disk holding %s: %.1f GiB free, about %.1f GiB needed.\n'
         '    %.1f GiB of game files, and packing holds three copies at once (the extraction, the assembled app and the '
         'IPA).\n    Free some space, move the game folder to another disk, or remove an earlier run\'s work folder with\n'
         '    --clean "%s" (it is several times the size of the game and only --keep-work needs it after a run).'
-        % (folder, free / 2**30, need / 2**30, src / 2**30, folder))
+        % (disk, free / 2**30, need / 2**30, src / 2**30, folder))
 
 
 HOST_DIRS = ('dm/host', 'dm/gfx', 'dm/gfx/nvn', 'dm/gfx/nvn/include', 'dm/gfx/tex', 'dm/gfx/vk', 'dm/gfx/gl')
@@ -950,15 +968,44 @@ def fill_mem_used(patched, mods, gdir, rows):
     return value, total
 
 
-def step_rewrite(exe_dir, mods, out, work, force=False):
+def nro_names(patched):
+    """The NRO modules of nro.tsv, in manifest order; 'refused' rows are the host's business, not ours."""
+    f = patched / 'nro.tsv'
+    if not f.is_file(): return []
+    return [l.split('\t')[0] for l in f.read_text(encoding='utf-8', errors='replace').splitlines()
+            if l.strip() and not l.startswith('#') and not l.startswith('refused\t')]
+
+
+def step_nros(game, work, force=False):
+    """The NRO modules a game loads at run time (nn::ro): its NRR files register them by SHA-256 and the RomFS holds
+    them, loose or inside an archive (dm/tools/nro_collect.py). The host finds the rewritten copy by that hash
+    (hle_ro.c), so a game whose modes are NROs stops the first time it loads one without this step: "[RED] ro::LoadModule:
+    no rewritten NRO with SHA-256 ... it is not in the patched modules' nro.tsv" (Clubhouse Games: 51 Worldwide Classics
+    dies leaving the title screen for a single-player game). Returns the manifest names."""
+    romfs = game / 'RomFS'
+    if not any(f.endswith('.nrr') for _dp, _dn, fs in os.walk(romfs) for f in fs): return []
+    out = work / 'build' / 'nro'
+    if not force and (out / 'nro.tsv').is_file():
+        names = nro_names(out)
+        if names: say('NRO modules already collected (%d)' % len(names)); return names
+    out.mkdir(parents=True, exist_ok=True)
+    run([PY, TOOLS / 'nro_collect.py', romfs, out], log=work / 'logs' / 'nro_collect.log',
+        what='collecting the NRO modules the game loads at run time')
+    names = nro_names(out)
+    if names: say('%d NRO modules the game registers (rewritten beside the other modules)' % len(names))
+    return names
+
+
+def step_rewrite(exe_dir, mods, out, work, force=False, extra=None):
     # patch_nso.py is pure Python (capstone + lz4): its stubs are hand-assembled machine code, not built at run time,
     # so no C compiler is needed here even though its comments mention clang.
-    if not force and all((out / (m + '.patched.bin')).is_file() and (out / (m + '.fixups.tsv')).is_file() for m in mods):
+    want = [(m, exe_dir / m) for m in mods] + list((extra or {}).items())
+    if not force and all((out / (m + '.patched.bin')).is_file() and (out / (m + '.fixups.tsv')).is_file() for m, _ in want):
         say('rewritten modules already there'); return
     out.mkdir(parents=True, exist_ok=True)
-    for m in mods:
-        run([PY, TOOLS / 'patch_nso.py', exe_dir / m, out, m],
-            log=work / 'logs' / ('rewrite_%s.log' % m), what='rewriting %s' % m)
+    for m, src in want:
+        run([PY, TOOLS / 'patch_nso.py', src, out, m],
+            log=work / 'logs' / ('rewrite_%s.log' % safe_name(m)), what='rewriting %s' % m)
 
 
 def graphics_route(prof_dir, registered=None):
@@ -1140,8 +1187,16 @@ def step_translate(pkg, work, xlate, iosout, tid, force=False):
     # when the toolchain lock changes. It reads the tables, so it costs nothing to do every time.
     run([PY, nometal, GFX / 'dmsh_chain.py', '--header'], env=genv,
         log=work / 'logs' / 'chain_header.log', what='dmsh_chain --header')
+    # DMSH_TARGETS=ios: only the iOS libraries ship (the shell loads <App>/msl/b-<V>/), and this machine's "compiler" is
+    # nometal_run.py copying MSL, so the macOS half is the same bytes written a second time. Measured on a 50,978-shader
+    # pack: mac + ios ran 2 x 97,527 compiles and cache entries of which 97,527 were never read -- half the artifacts, a
+    # third of the cache files, ~3.6 minutes. The macOS sources and reflection JSON are still written: c1_full.tsv and
+    # cb_extent.tsv are made from them.
+    # J: 8 was sized for a GIL-bound thread pool. This build reaches only 4.5-5.5 threads on 16 logical cores (measured:
+    # 5.5x parallelism on a 292-shader profile), and 16 was 14% faster than 8 while 32 was slower again.
     run([PY, nometal, GFX / 'dmsh_build.py', pkg, work / 'shader' / 'cache'],
-        env={'IOSOUT': iosout, 'XLATE': xlate, 'WORK': work, 'J': os.environ.get('J', '8'), 'DM_GAME': tid},
+        env={'IOSOUT': iosout, 'XLATE': xlate, 'WORK': work, 'J': os.environ.get('J', '16'), 'DM_GAME': tid,
+             'DMSH_TARGETS': os.environ.get('DMSH_TARGETS', 'ios')},
         log=work / 'logs' / 'shaders.log', what='translating shaders to Metal source')
     # Report per directory: a work folder that survived an interrupted run holds one b-<V> per chain version, and the
     # sum of them reads as a healthy build while the directory that gets shipped holds a handful.
@@ -1157,32 +1212,6 @@ def step_guest(patched, mods, stage):
     import guest_dylib
     fw, n = guest_dylib.write(str(patched), str(stage / 'Frameworks'), mods)
     say('Frameworks/Guest.framework: %d bytes' % n)
-
-
-TEXT_SUFFIXES = ('.tsv', '.txt', '.json')   # the formats the host parses line by line
-
-
-def normalize_text(app):
-    """Rewrite the staged tree's text files with LF endings.
-
-    Every tool in this chain writes its tables in Python's text mode, which on Windows ends the lines with CRLF. Most of the
-    host's readers go through scanf or split on whitespace and never notice, but two compare whole lines: the shader library
-    stamp (inputs.tsv, read for game and digest) and the pipeline prewarm lists (pso_manifest.tsv / pso_user.tsv, compared
-    line by line with what the game creates). With a CR in them the c1_full.tsv / cb_extent.tsv tables are taken as stale
-    ("every c1 gets its own 64 KiB", uniform reads reach the whole binding) and no pipeline is ever warmed up. Rewriting them
-    here keeps every writer as it is and makes the package identical whatever wrote it.
-    """
-    n = 0
-    for p in app.rglob('*'):
-        if not p.is_file() or p.suffix.lower() not in TEXT_SUFFIXES: continue
-        try:
-            b = p.read_bytes()
-        except OSError:
-            continue
-        if b'\r\n' not in b: continue
-        p.write_bytes(b.replace(b'\r\n', b'\n'))
-        n += 1
-    if n: say('text files written with LF endings: %d (CRLF breaks the shader library stamp and the prewarm lists)' % n)
 
 
 def env_for(rows):
@@ -1241,6 +1270,11 @@ def env_for(rows):
     # Fixing this properly means hle_fs.c reading the same source as hle_svc.c's I_ProgramId, a change to the host.
     # Same again for the keys whose environment name does not follow the profile's: each host reads its own spelling and
     # takes the profile's text as it stands (a list of shader keys, "segment", "display").
+    # glslc_capture: a run-time shader capture (docs/CAPTURE.md's route for a game whose shaders only exist while it
+    # runs) on a game that compiles through the SDK's own GLSLC rather than Vulkan's or GL's. A relative path counts from
+    # Documents, because main.m chdir's there before the host starts.
+    gcap = one(rows, 'glslc_capture')
+    if gcap: lines.append('DM_GLSLC_CAPTURE=' + gcap.strip())
     for k, ev in (('feedback_snap', 'DM_NVN_FB_SNAP'), ('gpu_timestamps', 'DM_NVN_GPU_TS'),
                   ('present_interval', 'DM_PRESENT_INTERVAL'), ('shader_key_skip', 'DM_SHADER_KEY_SKIP'),
                   ('ue_fps_cvar', 'DM_UE_FPS_CVAR')):
@@ -1284,7 +1318,35 @@ def env_for(rows):
     return lines
 
 
-def step_assemble(shell, stage, game, patched, mods, gdir, rows, name, version, tid, msl_dir, work, aoc_dir=None):
+# .plist is left out on purpose: a framework's Info.plist may be binary, and a binary plist can hold a CR LF pair as data.
+TEXT_SUFFIXES = ('.tsv', '.txt', '.json')   # the formats the host parses line by line
+
+
+def normalize_text(app):
+    """Rewrite the staged tree's text files with LF endings.
+
+    Every tool in this chain writes its tables in Python's text mode, which on Windows ends the lines with CRLF. Most of the
+    host's readers go through scanf or split on whitespace and never notice, but two compare whole lines: the shader library
+    stamp (inputs.tsv, read for game and digest) and the pipeline prewarm lists (pso_manifest.tsv / pso_user.tsv, compared
+    line by line with what the game creates). With a CR in them the c1_full.tsv / cb_extent.tsv tables are taken as stale
+    ("every c1 gets its own 64 KiB", uniform reads reach the whole binding) and no pipeline is ever warmed up. Rewriting them
+    here keeps every writer as it is and makes the package identical whatever wrote it.
+    """
+    n = 0
+    for p in app.rglob('*'):
+        if not p.is_file() or p.suffix.lower() not in TEXT_SUFFIXES: continue
+        try:
+            b = p.read_bytes()
+        except OSError:
+            continue
+        if b'\r\n' not in b: continue
+        p.write_bytes(b.replace(b'\r\n', b'\n'))
+        n += 1
+    if n: say('text files written with LF endings: %d (CRLF breaks the shader library stamp and the prewarm lists)' % n)
+
+
+def step_assemble(shell, stage, game, patched, mods, gdir, rows, name, version, tid, msl_dir, work, aoc_dir=None,
+                  bundle_id='', icon='', nros=None):
     """Unpack the shell and put the game into it: guest library, MSL source, RomFS, tables, icon, identity."""
     # Move a previous stage aside instead of deleting it: this environment counts file deletions and refuses to go past a
     # threshold, which a 5000-file app tree trips instantly. Renaming keeps the build going; the old tree is reported so it
@@ -1315,10 +1377,13 @@ def step_assemble(shell, stage, game, patched, mods, gdir, rows, name, version, 
     say('shell unpacked: %s' % A.name)
 
     step_guest(patched, mods, A)
-    for m in mods:
+    for m in list(mods) + list(nros or []):
         for suf in ('.fixups.tsv', '.gates.tsv', '.cuts.tsv', '.obs.tsv'):
             s = patched / (m + suf)
             if s.is_file(): shutil.copyfile(s, A / 'dm' / s.name)
+    # The NRO manifest: the host reads it at start and maps every module it lists (loader.c preload_nros), matching a
+    # run-time nn::ro::LoadModule by the NRO's SHA-256 (hle_ro.c). Without it the game stops the first time it loads one.
+    if nros: shutil.copyfile(patched / 'nro.tsv', A / 'dm' / 'nro.tsv')
 
     # shader libraries: the directory name is the chain version, which the shell reads at run time
     if msl_dir.is_dir():
@@ -1373,8 +1438,9 @@ def step_assemble(shell, stage, game, patched, mods, gdir, rows, name, version, 
     ip = A / 'Info.plist'
     try:
         with open(ip, 'rb') as f: pl = plistlib.load(f)
-        pl['CFBundleIdentifier'] = 'org.nxnative.%016x' % int(tid, 16)
+        pl['CFBundleIdentifier'] = bundle_id or 'org.nxnative.%016x' % int(tid, 16)
         pl['CFBundleDisplayName'] = name
+        pl['CFBundleName'] = name
         pl['CFBundleShortVersionString'] = version
         pl['CFBundleVersion'] = version
         pl['DMShowFPS'] = 'NO'
@@ -1390,7 +1456,8 @@ def step_assemble(shell, stage, game, patched, mods, gdir, rows, name, version, 
             say('Info.plist: DMCommit %s (the shell this package was built from)' % sha[:12])
         else:
             warn('the shell\'s dm/shell_info.txt carries no SOURCE_SHA, so log.txt will say "commit not recorded"')
-        icon_src = game / 'icon.jpg'
+        # --icon overrides the game's own icon.jpg, which the extraction puts beside the RomFS.
+        icon_src = Path(icon) if icon else game / 'icon.jpg'
         if icon_src.is_file():
             try:
                 from PIL import Image
@@ -1490,11 +1557,12 @@ def main():
                          'modules and the shaders (it is several times the size of the game)')
     ap.add_argument('--clean', default='', metavar='NSP_FOLDER',
                     help='remove the working folder an earlier run left in NSP_FOLDER, and exit')
-    ap.add_argument('--work-dir', default='', metavar='FOLDER',
-                    help='put the working folder (<tid>_pack: the extraction, the rewritten modules, the shader build) '
-                         'here instead of beside the NSPs, e.g. on an SSD when the games live on a slow disk')
-    ap.add_argument('--name', default='', metavar='TITLE',
-                    help='the name the app shows on the home screen (default: the profile\'s name row)')
+    ap.add_argument('--work-dir', default='', metavar='DIR',
+                    help='create the work folder (<title ID>_pack: the extraction, the shaders, the stage, several GB) under '
+                         'DIR instead of next to the game files, e.g. on an SSD while the library is on a hard disk')
+    ap.add_argument('--name', default='', help="the app's display name on the home screen (default: the profile's name key)")
+    ap.add_argument('--bundle-id', default='', help="the app's bundle ID (default: org.nxnative.<base game title ID>)")
+    ap.add_argument('--icon', default='', help="a PNG/JPEG used as the app icon (default: the game's own icon from its control.nacp)")
     ap.add_argument('--tools', default=os.environ.get('NXN_TOOLS', ''),
                     help='folder holding the nx_extract, dmsh_xlate, spirv-cross, glslangValidator and zstd executables '
                          '(the windows-tools CI artifact, packed as nxnative-windows-tools.zip). They are put on PATH and '
@@ -1521,7 +1589,7 @@ def main():
     folder = Path(a.nsp_dir).resolve()
     if not a.capture_gl and not shell.is_file(): die('no shell file: %s' % shell)
     if not folder.is_dir(): die('no such folder: %s' % folder)
-    check_free_space(folder)
+    check_free_space(folder, disk=a.work_dir or None)
     # Where the IPA goes is only needed at the very end, twenty minutes away, so a folder that does not exist or a disk
     # that cannot hold the package used to cost the whole run and end in a Python traceback. Say it now instead.
     if a.out:
@@ -1645,6 +1713,8 @@ def main():
         (', update %s' % fam['updates'][pkg].name) if pkg != 'v0' and pkg in fam['updates'] else ', no update')
         + (('; %d DLC' % len(fam['dlc'])) if fam['dlc'] else ''))
 
+    # --work-dir: keep the work folder (extraction, shaders, stage, several GB) somewhere else than next to the NSPs,
+    # e.g. an SSD while the game library sits on a hard disk.
     work = (Path(a.work_dir).resolve() if a.work_dir else folder) / (tid + '_pack')
     work.mkdir(parents=True, exist_ok=True)
     (work / 'logs').mkdir(exist_ok=True)
@@ -1732,7 +1802,10 @@ def main():
         say('derived profile: %s (%s)' % (derived, disp))
 
     patched = work / 'build' / 'patched'
-    step_rewrite(game / 'ExeFS', mods, patched, work, a.force)
+    nros = step_nros(game, work, a.force)
+    nro_src = {n: work / 'build' / 'nro' / (n + '.nro') for n in nros}
+    step_rewrite(game / 'ExeFS', mods, patched, work, a.force, extra=nro_src)
+    if nros: shutil.copyfile(work / 'build' / 'nro' / 'nro.tsv', patched / 'nro.tsv')
     # After the rewrite, not before: only the rewritten modules' bytes reach GetInfo's UsedMemorySize.
     # Only for a derived profile: a game the profile was brought up on has its mem_used settled by the profile author,
     # and second-guessing it would resize the heap of titles that already work.
@@ -1752,7 +1825,7 @@ def main():
             shutil.rmtree(dst, ignore_errors=True); shutil.copytree(out, dst)
             say('%d files → %s' % (len(os.listdir(dst)), dst))
         return say('stopped after the capture')
-    check_gates(stamp, patched, mods)
+    check_gates(stamp, patched, mods + nros)
 
     # NVN games hold their shaders in the game files, so they are split out and translated here. A GL or Vulkan game does not:
     # its shaders only exist once it runs (LÖVE assembles each one in Lua), and upstream captures them by booting the game on a
@@ -1906,9 +1979,9 @@ def main():
     if a.stop_after == 'guest': return say('stopped before assembly')
 
     stage = work / 'stage'
-    # --name overrides the profile's name row: the app the home screen shows, Info.plist's display name and the IPA's file name
     A = step_assemble(shell, stage, game, patched, mods, gdir, rows,
-                      a.name or one(rows, 'name', tid), builds[pkg], tid, msl_out, work, aoc_dir)
+                      a.name or one(rows, 'name', tid), builds[pkg], tid, msl_out, work, aoc_dir,
+                      bundle_id=a.bundle_id, icon=a.icon, nros=nros)
     if vk_out is not None:
         dst = A / 'msl' / 'vk'
         shutil.rmtree(dst, ignore_errors=True)

@@ -2041,17 +2041,32 @@ def yaz0(s, label='Yaz0'):
     return bytes(out[:n])
 
 def sarc_members(d, label='SARC'):
-    """(name, bytes) of each member of a SARC: the header, SFAT (its entries), SFNT (the names), then the data, where every member lies. A member range outside the data
-    (one spanning the whole archive would be scanned as the archive again, without end) is a damaged archive"""
-    hl, bom, size, doff = field(d, '<HHII', 4, f'{label} SARC header')
-    n = field(d, '<H', hl + 6, f'{label} SFAT header')[0]
-    names = hl + 12 + 16 * n + 8
-    if not names <= doff <= len(d): red(f'{label}: SARC data at {doff:#x}, its {n} entries and the names end at {names:#x}, the archive at {len(d):#x}')
-    for i in range(n):
-        h, attr, s, e = struct.unpack_from('<IIII', d, hl + 12 + 16 * i)
-        if not s <= e <= len(d) - doff: red(f'{label}: SARC member {i} at {s:#x}..{e:#x} of the data lies outside its {len(d) - doff:#x} bytes')
-        nm = d[names + (attr & 0xffffff) * 4:].split(b'\0')[0].decode('utf-8', 'replace') if attr >> 24 else f'#{i}'
-        yield nm, d[doff + s:doff + e]
+    """SARC (Nintendo's layout / 2D archives) → yields (name, member bytes).
+    The header is validated before anything is cut (byte order included: BOM 0xFEFF is little-endian, 0xFFFE big-endian, and
+    the two look identical in a hexdump). Without it, a file that merely begins with the four letters gave a node count read
+    out of the middle of the file and a fresh copy of the whole archive per member name: GROOVE COASTER WAI WAI PARTY!!!!'s
+    156 MB ui/ReplaceTexture.arc kept the split busy for half an hour with no shader in it. A SARC whose header, SFAT marker,
+    node table or string table does not fit the file is read as "not a SARC" and its bytes are scanned as a blob instead.
+    Both byte orders are tried and the one whose nodes all fit the file wins (little-endian first, the common case); a file
+    that claims no consistent header is not a SARC and is scanned as a blob by the caller."""
+    if len(d) < 0x24 or d[0x14:0x18] != b'SFAT': return
+    for bo in ('<', '>'):
+        hl, bom, size, doff = struct.unpack_from(bo + 'HHII', d, 4)
+        if hl != 0x14 or bom not in (0xFEFF, 0xFFFE) or doff > len(d): continue
+        n = struct.unpack_from(bo + 'H', d, hl + 6)[0]
+        names = hl + 12 + 16 * n + 8
+        if not 1 <= n <= 0x2000 or names > len(d): continue
+        strs = d[names:]
+        nodes = [struct.unpack_from(bo + 'IIII', d, hl + 12 + 16 * i) for i in range(n)]
+        if not all(e >= s and doff + e <= len(d) and (not attr >> 24 or (attr & 0xffffff) * 4 < len(strs))
+                   for h, attr, s, e in nodes): continue
+        for i, (h, attr, s, e) in enumerate(nodes):
+            off = (attr & 0xffffff) * 4
+            # 256 bytes, then split at the NUL: slicing to the end of the archive copied the rest of the file for every
+            # member (495 names × 35 MB in AllGame.arc alone, and minutes per archive with hundreds of members)
+            nm = strs[off:off + 0x100].split(b'\0')[0].decode('utf-8', 'replace') if attr >> 24 else f'#{i}'
+            yield nm, d[doff + s:doff + e]
+        return
 
 NV_STAGES = ['vs', 'ps', 'gs', 'hs', 'ds', 'cs']   # NVN stage order
 COMMON, TREES = None, {}   # Unity common strings and borrowed type trees (given when the pool starts)
@@ -2276,8 +2291,11 @@ def scan_blob(d, label, out, depth=0, left=None):
         left[0] -= stored
         if left[0] < 0: red(f'{label}: the archive members add up to more than {NEST} times the file (members that overlap)')
     if d[:4] == b'SARC':
+        # Nintendo's layout archives keep shaders as members, but this branch used to return whether or not a member held one:
+        # for GROOVE COASTER WAI WAI PARTY!!!!'s ui/*.arc (big-endian SARC) the whole file was skipped and the game reported 19
+        # shaders it did not have at run time ("is not in the shader map"), drawing its text and UI with the wrong programs.
+        # Members are scanned first, then the file by the scans below, which find the BNSH whatever the member table says.
         for nm, m in sarc_members(d, label): scan_blob(m, f'{label}/{nm}', out, depth + 1, left)
-        return
     if d[:4] == b'BAHS': out.extend(bahs_shaders(d, label)); return
     if d[:len(TFXO)] == TFXO: out.extend(tfxo_shaders(d, label)); return
     if d[:4] == b'MSHD': out.extend(mshd_shaders(d, label)); return
