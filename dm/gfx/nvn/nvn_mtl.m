@@ -9653,6 +9653,16 @@ static void draw_(const p_draw *dw, const p_draw_idx *di) {
     if (!g_defer_replaying && !g_geo_program) {
         if (g_defer.active && g_defer.in_p && !g_defer.at_q) { if (defer_take(dw, di)) return; }
     }
+    // Diagnostic DM_DRAWLOG=1 (off by default): one line per draw with the program's vertex and fragment shader keys, so an object that draws
+    // wrong can be matched to its shader without guessing keys (a key can otherwise only be tested one at a time with DM_NVN_HILITE). Both
+    // switches come from the environment, which on iOS is dm/env.txt (a Documents/env.txt beside the save data overrides it): write the line
+    // there and relaunch, no diagnostic is compiled in. DM_DRAWLOG_COUNT caps the lines (default 300).
+    { static int dl = -1, dn, cap = 300;
+      if (dl < 0) { const char *e = getenv("DM_DRAWLOG"); dl = e && atoi(e) != 0;
+                    const char *c = getenv("DM_DRAWLOG_COUNT"); if (c && atoi(c) > 0) cap = atoi(c);
+                    if (dl) MLOG("DM_DRAWLOG: logging the first %d draws (vs / ps keys)", cap); }
+      if (dl && dn < cap) { dn++; MLOG("[draw] f%llu p%llu vs=%s ps=%s", (unsigned long long)atomic_load(&g_cur_frame),
+          (unsigned long long)g_stat_pass, pr->sh[0] ? pr->sh[0]->key : "-", pr->sh[1] ? pr->sh[1]->key : "-"); } }
     // Draws that cannot draw anything (both faces culled, empty scissor) return before the render pass is opened: otherwise the render pass is already open and on TBDR the whole attachment is loaded and stored for nothing
     // (Mac character select page: 3 render passes are opened only because of such draws, all loaded, zero draws)
     // Diagnostic switch for measuring an upper bound DM_NVN_SKIP_FS=<fragment key>[,<fragment key>...] (none by default): drops all draws of these fragment shaders (the picture will be wrong; only used in real-device ABA to measure "how much GPU time this class of draws is worth in total")
