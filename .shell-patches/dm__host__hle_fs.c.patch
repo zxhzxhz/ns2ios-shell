@@ -14,7 +14,7 @@ diff --git a/dm/host/hle_fs.c b/dm/host/hle_fs.c
  
  // ---------- Mount ----------
  HLE_FORCE("_ZN2nn2fs22QueryMountRomCacheSizeEPm", "fsp-srv; rom reads the host directory directly, the cache gets only the minimum size", Result, h_fs_QueryRomCache, size_t *out) { *out = 0x1000; return RES_OK; }
-@@ -552,6 +558,24 @@
+@@ -552,6 +558,43 @@
  HLE_FORCE("_ZN2nn2fs21MountTemporaryStorageEPKc", "fsp-srv; temporary storage → host directory", Result, h_fs_MountTemp, const char *name) {
      char b[1024]; return mount(name, envdir("DM_TEMP", "run/platform/temp", b, sizeof b), 0);
  }
@@ -26,20 +26,39 @@ diff --git a/dm/host/hle_fs.c b/dm/host/hle_fs.c
 +// SaveConfigDict keeps the slot with an empty saveFileNames list (four slots that restore nothing). It imports MountRamDisk but
 +// never calls it, so the device is mounted here for a game that only names it -- the same "ask main's imports" rule the device
 +// save data uses above.
-+static const char *ram_dir(char *b, size_t n) { return envdir("DM_RAM", "run/platform/ram", b, n); }
++// The backing directory has to exist *before* the mount: every path under ram: is resolved by walking its components, and a
++// missing root answers "not found" for each of them (the first build put the device at $DM_ROOT/run/platform/ram, whose
++// parent does not exist on iOS, and the game's mkdir ram:/TempPlayerSave failed as fast as it was retried). So it lives
++// beside the temporary storage, which the front end creates at boot, and the chain is made here anyway.
++static const char *ram_dir(char *b, size_t n) {
++    const char *r = getenv("DM_RAM");
++    if (r && *r) { strlcpy(b, r, n); return b; }
++    char t[1024];
++    snprintf(b, n, "%s/ram", envdir("DM_TEMP", "run/platform/temp", t, sizeof t));
++    return b;
++}
++static void mkdir_parents(char *p) {
++    if (p[0] != '/') { mkdir(p, 0755); return; }
++    for (char *q = p + 1; *q; q++) if (*q == '/') { *q = 0; mkdir(p, 0755); *q = '/'; }
++    mkdir(p, 0755);
++}
++static Result ram_mount(const char *name) {
++    char b[1024]; ram_dir(b, sizeof b); mkdir_parents(b);
++    return mount(name, b, 0);
++}
 +HLE_FORCE("_ZN2nn2fs12MountRamDiskEPKcPvm", "fsp-srv; RAM disk → host directory under the temporary storage (the guest's buffer is unused)", Result, h_fs_MountRamDisk, const char *name, void *buf, size_t sz) {
 +    (void)buf; char b[1024];
 +    LOG("fs RAM disk %s: %zu bytes asked for, backed by %s (volatile, the buffer stays unused)", name, sz, ram_dir(b, sizeof b));
-+    return mount(name, b, 0);
++    return ram_mount(name);
 +}
 +static void ram_disk_ensure(void) {
 +    if (!dm_main_imports("_ZN2nn2fs12MountRamDiskEPKcPvm")) return;
-+    char b[1024]; mount("ram", ram_dir(b, sizeof b), 0);
++    ram_mount("ram");
 +}
  // Cache storage (Tears of the Kingdom; its first list call opened fsp-srv and aborted in sm::Initialize): storage <index> is the host folder <temporary storage>_cache<index>,
  // created when it is created or mounted. The list reports none (a fresh console), so the game creates its storage at every boot; creating an existing one succeeds
  static const char *cache_dir(int index, char *b, size_t n) { char t[1024]; snprintf(b, n, "%s_cache%d", envdir("DM_TEMP", "run/platform/temp", t, sizeof t), index); return b; }
-@@ -602,6 +626,7 @@
+@@ -602,6 +645,7 @@
      if (!d) die("DM_SAVE is not set: point it at a writable copy of a save directory");
      char dd[1024]; strlcpy(dd, d, sizeof dd); size_t L = strlen(dd); while (L > 1 && dd[L - 1] == '/') dd[--L] = 0;   // strip trailing slashes (.work / .new are appended at the same level)
      save_sync_mount(dd, DM_GAME_ID);   // DM_SAVE_SYNC: the cloud's save comes in before the work directory is cloned from the committed one (save_sync.h)
@@ -47,7 +66,7 @@ diff --git a/dm/host/hle_fs.c b/dm/host/hle_fs.c
      return mount_ex(name, dd, 0, 1);
  }
  // Device save data: one save for the console instead of one per user. Animal Crossing: New Horizons keeps its island there (3.0.3's main mounts no account save data at all); the host
-@@ -836,6 +861,7 @@
+@@ -836,6 +880,7 @@
  
  // ---------- Path operations ----------
  HLE_FORCE("_ZN2nn2fs10CreateFileEPKcl", "fsp-srv → open(O_CREAT|O_EXCL)+ftruncate", Result, h_fs_CreateFile, const char *path, int64_t sz) {
@@ -55,7 +74,7 @@ diff --git a/dm/host/hle_fs.c b/dm/host/hle_fs.c
      int mi; int64_t k; if (img_path(path, &mi, &k)) return k >= 0 ? RES_PATH_EXISTS : RES_FAIL;   // as RW_CREATE answers on a read-only folder
      HP_EX(path, 1); RW_CREATE();
      int fd = open(hp, O_WRONLY | O_CREAT | O_EXCL, 0644);
-@@ -845,8 +871,9 @@
+@@ -845,8 +890,9 @@
      if (rc) unlink(hp);
      errno = e; return rc ? err_res("create", hp) : RES_OK;
  }
@@ -66,7 +85,7 @@ diff --git a/dm/host/hle_fs.c b/dm/host/hle_fs.c
      int mi; int64_t k; if (img_path(path, &mi, &k)) return k >= 0 ? RES_PATH_EXISTS : RES_FAIL;
      HP_EX(path, 1); RW_CREATE();
      if (mkdir(hp, 0755)) return err_res("mkdir", hp);
-@@ -864,10 +891,12 @@
+@@ -864,10 +910,12 @@
      return rc | rmdir(p);
  }
  HLE_FORCE("_ZN2nn2fs26DeleteDirectoryRecursivelyEPKc", "fsp-srv → recursive delete (only inside writable mounts)", Result, h_fs_DeleteDirRec, const char *path) {
@@ -79,7 +98,7 @@ diff --git a/dm/host/hle_fs.c b/dm/host/hle_fs.c
      HP(path); RW();
      DIR *d = opendir(hp); if (!d) return err_res("cleandir", hp);
      struct dirent *e; char c[1024]; int rc = 0;
-@@ -889,9 +918,11 @@
+@@ -889,9 +937,11 @@
  HLE_FORCE("_ZN2nn2fs26DisableGlobalFileDataCacheEv", "fsp-srv global read cache; unused by the host (DRAGON QUEST XI S's nninitStartup turns it off again after its start-up thread)", void, h_fs_DisableGlobalCache, void) {}
  // SDK 11 (Metroid Dread): delete an empty directory
  HLE_FORCE("_ZN2nn2fs15DeleteDirectoryEPKc", "fsp-srv → rmdir(2) (the directory must be empty)", Result, h_fs_DeleteDir, const char *path) {
