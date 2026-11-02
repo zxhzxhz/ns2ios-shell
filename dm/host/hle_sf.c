@@ -17,6 +17,29 @@ static struct { char name[16]; int used, domain; unsigned seen; } g_sf[SF_MAX];
 static pthread_mutex_t g_sf_mu = PTHREAD_MUTEX_INITIALIZER;
 static const char *const sf_served[] = {"olsc:u"};
 
+// Names served beyond sf_served, from DM_SF_SERVE (comma, semicolon or space separated: "nsd:u,nsd:a"). A game that carries a
+// service client of its own (PATAPON 1+2 Replay's boot path asks nn::nsd for the application server environment and aborts with
+// 0xE8D when the connect was refused by sm) then gets "success with zeroed output" per request instead of the refusal, which is
+// enough for a settings / name-resolution client that only has to come up. Empty by default, so nothing changes for a game that
+// does not need it. Read once, at the first connect.
+static const char *sf_extra(void) {
+    static const char *v;
+    if (!v) { v = getenv("DM_SF_SERVE"); if (!v) v = ""; }
+    return v;
+}
+static int sf_serves(const char *name) {
+    for (size_t k = 0; k < sizeof sf_served / sizeof *sf_served; k++)
+        if (!strncmp(name, sf_served[k], strlen(sf_served[k]))) return 1;
+    for (const char *p = sf_extra(); *p; ) {
+        while (*p == ',' || *p == ' ' || *p == ';' || *p == '\t') p++;
+        const char *q = p; while (*q && *q != ',' && *q != ' ' && *q != ';' && *q != '\t') q++;
+        size_t n = (size_t)(q - p);
+        if (n && n <= 8 && !strncmp(name, p, n) && (n == 8 || !name[n])) return 1;
+        p = q;
+    }
+    return 0;
+}
+
 static int sf_slot(uint32_t h) {
     unsigned i = h - SF_H0;
     return i < SF_MAX && g_sf[i].used ? (int)i : -1;
@@ -34,9 +57,19 @@ HLE_FORCE("_ZN2nn2sf4hipc31InitializeHipcServiceResolutionEv", "service name res
 HLE_FORCE("_ZN2nn2sf4hipc29FinalizeHipcServiceResolutionEv", "service name resolution (sm)", void, h_sf_FinRes, void) {}
 HLE_FORCE("_ZN2nn2sf4hipc20ConnectToHipcServiceEPNS_3svc6HandleEPKc", "connect to a service through sm → a host session for the services the host serves", Result, h_sf_Connect,
           uint32_t *out, const char *name) {
-    for (size_t k = 0; k < sizeof sf_served / sizeof *sf_served; k++)
-        if (!strncmp(name, sf_served[k], 8)) { *out = sf_new(sf_served[k], 0); LOG("sf: %s → host session %#x (every request succeeds with zeroed output)", sf_served[k], *out); return RES_OK; }
-    LOG("[RED] sf: the game connects to service %.8s itself, which the host does not serve", name);
+    // Who asks: the module and the offset in it, the same reading diag_abort takes of its return address (the guest's lr, which
+    // the HLE entry keeps in x30). A refused service with a name here names the client to implement or the switch to serve.
+    void *lr = __builtin_return_address(0);
+    module_t *m = module_of(lr);
+    char who[64];
+    if (m) snprintf(who, sizeof who, "%s+%#llx", m->name, (unsigned long long)((const uint8_t *)lr - m->base));
+    else snprintf(who, sizeof who, "%p", lr);
+    if (sf_serves(name)) {
+        *out = sf_new(name, 0);
+        LOG("sf: %s → host session %#x (every request succeeds with zeroed output), asked for by %s", name, *out, who);
+        return RES_OK;
+    }
+    LOG("[RED] sf: the game connects to service %.8s itself, which the host does not serve (asked for by %s)", name, who);
     return 0xe15u;   // sm ResultNotRegistered
 }
 HLE_FORCE("_ZN2nn2sf4hipc24CloseClientSessionHandleENS_3svc6HandleE", "close a session (kernel handle) → the host session", void, h_sf_Close, uint32_t h) {

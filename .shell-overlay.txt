@@ -49,6 +49,7 @@
 ~ dm/host/hle_cheats.c          # DM_CHEATS_ON carries 64 entries, not 16: the launcher's own list is the switch (no Mac panel)
 ~ dm/host/hle_fpslock.c         # profile ue_fps_cvar overridable at run time (DM_UE_FPS_CVAR): the shell compiles the placeholder's t.MaxFPS
 ~ dm/host/hle_fs.c              # the RAM disk device (nn::fs::MountRamDisk, mounted for a game that only names ram:); DM_FSWRITE=1 traces the writes and deletes of a save
+~ dm/host/hle_sf.c              # DM_SF_SERVE=name,name serves a service the host does not implement (success, zeroed output); every connect logs who asked
 ~ dm/gfx/nvn/nvn_mtl.m          # compile MSL source on the device; chain version read from the msl directory name; render_cond / tex_dyn_slots / tex_dirty_upload read from the environment
 ~ dm/gfx/nvn/hle_nvn.c          # profile tex_flush_upload / tex_dirty_upload / render_cond overridable at run time: the shell compiles the placeholder's 0
 ~ dm/gfx/gl/hle_gl.m            # a shader library the packing computer could not compile is compiled on the device instead
