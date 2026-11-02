@@ -25,7 +25,7 @@ diff --git a/dm/tools/patch_nso.py b/dm/tools/patch_nso.py
          return pool.starmap(fn, jobs)
  
  def find_x18_words():
-@@ -1554,6 +1560,27 @@
+@@ -1645,6 +1651,27 @@
  if os.environ.get('DM_SPIN_LIST'):
      for T, bes, n in spin_sites: print(f'{NAME} spin wait {T:#x} ({n} instructions), back-edges ' + ' '.join(f'{b:#x}' for b in bes))
  

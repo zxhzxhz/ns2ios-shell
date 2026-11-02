@@ -1,7 +1,7 @@
 diff --git a/dm/gfx/tools/shader_split.py b/dm/gfx/tools/shader_split.py
 --- a/dm/gfx/tools/shader_split.py
 +++ b/dm/gfx/tools/shader_split.py
-@@ -89,12 +89,20 @@
+@@ -90,12 +90,20 @@
      if not (0 <= at and 0 <= n <= len(d) - at): red(f'{where}: {n:#x} bytes at {at:#x} lie outside the {len(d):#x} bytes there are')
      return d[at:at + n]
  
@@ -24,8 +24,8 @@ diff --git a/dm/gfx/tools/shader_split.py b/dm/gfx/tools/shader_split.py
 +    if zstd is None: red(f'Python {sys.version_info[0]}.{sys.version_info[1]} has no compression.zstd (3.14+): pip install backports.zstd')
      return zstd
  
- def ctl_len(ctl):
-@@ -2033,17 +2041,32 @@
+ NVN2_KEY_CTL = 0x48
+@@ -2091,17 +2099,32 @@
      return bytes(out[:n])
  
  def sarc_members(d, label='SARC'):
@@ -69,7 +69,7 @@ diff --git a/dm/gfx/tools/shader_split.py b/dm/gfx/tools/shader_split.py
  
  NV_STAGES = ['vs', 'ps', 'gs', 'hs', 'ds', 'cs']   # NVN stage order
  COMMON, TREES = None, {}   # Unity common strings and borrowed type trees (given when the pool starts)
-@@ -2075,11 +2098,17 @@
+@@ -2133,11 +2156,17 @@
      return zstd.decompress(d, zstd_dict=_ZD[did])
  
  def unzs(path):
@@ -90,7 +90,7 @@ diff --git a/dm/gfx/tools/shader_split.py b/dm/gfx/tools/shader_split.py
      return unzs_dict(d, did, path)
  
  def frame_size(f):
-@@ -2262,8 +2291,11 @@
+@@ -2320,8 +2349,11 @@
          left[0] -= stored
          if left[0] < 0: red(f'{label}: the archive members add up to more than {NEST} times the file (members that overlap)')
      if d[:4] == b'SARC':
@@ -101,9 +101,9 @@ diff --git a/dm/gfx/tools/shader_split.py b/dm/gfx/tools/shader_split.py
          for nm, m in sarc_members(d, label): scan_blob(m, f'{label}/{nm}', out, depth + 1, left)
 -        return
      if d[:4] == b'BAHS': out.extend(bahs_shaders(d, label)); return
-     if d[:len(TFXO)] == TFXO: out.extend(tfxo_shaders(d, label)); return
-     if d[:4] == b'MSHD': out.extend(mshd_shaders(d, label)); return
-@@ -2547,7 +2579,10 @@
+     if d[:4] == b'NDSR': out.extend(ndsr_shaders(d, label)); return
+     if shaders := sead_prim_shaders(d, label): out.extend(shaders); return
+@@ -2651,7 +2683,10 @@
      files, results, common = [], [], None
      for i, (romfs, mainnso) in enumerate(zip(romfs_v, main_v)):
          tag = os.path.basename(os.path.dirname(os.path.abspath(romfs))) if i else ''

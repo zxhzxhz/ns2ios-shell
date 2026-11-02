@@ -42,16 +42,16 @@ diff --git a/dm/ios/Sources/main.m b/dm/ios/Sources/main.m
      return nil;
  }
  
-@@ -99,7 +111,7 @@
+@@ -123,7 +135,7 @@
      NSFileManager *fm = NSFileManager.defaultManager;
      NSString *doc = NSSearchPathForDirectoriesInDomains(NSDocumentDirectory, NSUserDomainMask, YES)[0];
      NSString *res = NSBundle.mainBundle.resourcePath;
 -    for (NSString *d in @[@"save", @"temp"]) [fm createDirectoryAtPath:[doc stringByAppendingPathComponent:d] withIntermediateDirectories:YES attributes:nil error:nil];
 +    for (NSString *d in @[@"save", @"temp", @"cheats"]) [fm createDirectoryAtPath:[doc stringByAppendingPathComponent:d] withIntermediateDirectories:YES attributes:nil error:nil];
      // Keep game files and scratch data out of device backups (Documents is backed up by default; a RomFS placed there is many GB). Saves, logs and the pipeline list stay in the backup
-     for (NSString *d in [@[@"romfs", @"temp"] arrayByAddingObjectsFromArray:[romfs_document_images(doc) valueForKey:@"lastPathComponent"]]) {
+     for (NSString *d in [@[@"romfs", @"aoc", @"temp"] arrayByAddingObjectsFromArray:[romfs_document_images(doc) valueForKey:@"lastPathComponent"]]) {
          NSURL *u = [NSURL fileURLWithPath:[doc stringByAppendingPathComponent:d]]; NSError *e = nil;
-@@ -144,6 +156,13 @@
+@@ -168,12 +180,29 @@
      NSString *lang = [NSBundle.mainBundle objectForInfoDictionaryKey:@"DMLanguage"];
      if (!getenv("DM_LANG") && [lang isKindOfClass:NSString.class] && lang.length) setenv("DM_LANG", lang.UTF8String, 0);
      fprintf(stderr, "boot: game language %s\n", getenv("DM_LANG") ?: "en-US");
@@ -62,10 +62,9 @@ diff --git a/dm/ios/Sources/main.m b/dm/ios/Sources/main.m
 +      fprintf(stderr, "boot: memory limit %llu MB (%s)\n", av >> 20,
 +              av < (5ull << 30) ? "no increased-memory-limit entitlement: the bigger games will be killed for memory"
 +                                : "entitlement in effect"); }
-     id<MTLDevice> gpu = MTLCreateSystemDefaultDevice();   // the system default device, the one the graphics layers take (mtl_init repeats this check for the other routes)
-     if (!gpu.supportsBCTextureCompression) {
-         snprintf(g_device_message, sizeof g_device_message, "This device's GPU (%s) cannot read BC-compressed textures, which the games use. It needs an iPhone 15 Pro or newer (A17 Pro chip or later) or an iPad with an M1 chip or later.",
-@@ -156,6 +175,13 @@
+     NSString *romfs = romfs_locate();
+     if (!romfs) { romfs_identity_report(doc); fprintf(stderr, "boot: game files not found (Documents/romfs.img, Documents/romfs or <App>/romfs)\n"); return 0; }
+     fprintf(stderr, "boot: game files %s\n", romfs.fileSystemRepresentation);
      setenv("DM_ROMFS", romfs.fileSystemRepresentation, 0);
      setenv("DM_SAVE", [doc stringByAppendingPathComponent:@"save"].fileSystemRepresentation, 0);
      setenv("DM_TEMP", [doc stringByAppendingPathComponent:@"temp"].fileSystemRepresentation, 0);
@@ -76,10 +75,13 @@ diff --git a/dm/ios/Sources/main.m b/dm/ios/Sources/main.m
 +    // The host loads at launch, before the settings screen exists, so the cheat load waits for Play (front_ios.m calls
 +    // dm_cheats_after_launcher): otherwise it would only log "no file for build" and never see the panel's file.
 +    setenv("DM_CHEATS_DEFER", "1", 1);
++    // The panel is the only switch there is on a phone, so it owns every entry -- including a "{Name}" master, which
++    // Atmosphère always runs: with no menu to turn one off, a file whose master breaks the game would be unusable.
++    setenv("DM_CHEATS_PANEL", "1", 1);
      NSString *dm = [res stringByAppendingPathComponent:@"dm"];
      setenv("DM_NVN_SHMAP", [dm stringByAppendingPathComponent:@"shader_map.tsv"].fileSystemRepresentation, 0);
      setenv("DM_MSL_DIR", [res stringByAppendingPathComponent:@"msl"].fileSystemRepresentation, 0);
-@@ -166,6 +192,12 @@
+@@ -183,6 +212,12 @@
      if ([fm fileExistsAtPath:pso]) setenv("DM_PSO_BUNDLE", pso.fileSystemRepresentation, 0);
      chdir(doc.fileSystemRepresentation);
      g_argv[0] = strdup("dmhost"); g_argv[1] = strdup(dm.fileSystemRepresentation); g_argc = 2;
@@ -92,7 +94,7 @@ diff --git a/dm/ios/Sources/main.m b/dm/ios/Sources/main.m
      dm_host_preload_start(g_argc, g_argv);   // Module tables / relocation / takeover run early in the background, in parallel with UIKit startup (and the launcher: the settings it sets are read when the game starts)
      return 1;
  }
-@@ -178,11 +210,19 @@
+@@ -195,11 +230,19 @@
      fprintf(stderr, "boot: dm_main returned %d\n", rc);
      return NULL;
  }
