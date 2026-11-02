@@ -268,3 +268,12 @@ HLE_FORCE("_ZN2nn2oe17GetPseudoDeviceIdEPNS_4util4UuidE", "pseudo device ID; a f
     static const uint8_t k[16] = {0x78, 0x62, 0x6c, 0x00, 0x53, 0x57, 0x4e, 0x41, 0x54, 0x49, 0x56, 0x45, 0x31, 0x30, 0x30, 0x31};
     memcpy(uuid, k, 16);
 }
+
+// The server environment a retail console reports (nn::oe::ServerEnvironmentType, 1 = Nintendo / lp1). The SDK's own oe::GetServerEnvironmentType is a four-byte
+// tail branch into nn::nsd::GetApplicationServerEnvironmentType (sdk+0x3c6f40 is `b #0x5f8ca0`, the nsd PLT slot), whose IPC client connects nsd:u and aborts with
+// 0xE8D when the host refuses it. So the value is answered here: PATAPON 1+2 Replay's Unity player asks for it on the boot path (main imports this symbol) and
+// died there before the first draw. Everything this game does with the answer is behind networking, which the host cuts anyway (nn::nsd::Resolve / ResolveEx).
+HLE_FORCE("_ZN2nn2oe24GetServerEnvironmentTypeEv", "server environment: Nintendo (retail lp1), answered here instead of through nn::nsd", int, h_oe_ServerEnv, void) {
+    static int once; if (!once++) LOG("oe::GetServerEnvironmentType: 1 (Nintendo / lp1)");
+    return 1;
+}
