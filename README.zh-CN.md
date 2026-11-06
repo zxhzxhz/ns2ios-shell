@@ -62,6 +62,28 @@ python scripts\nxn_pack.py ..\..\..\shell-<日期>-<提交>.zip D:\games\hades2 
 - 单独清掉之前留下的：`python scripts\nxn_pack.py --clean D:\games\hades2`
 - 卡带转储（`.xci`）第一次打包后会生成 `你的文件.xci.tid`，记住它是什么游戏，下次不用再解一遍
 
+### 拆分出包：小 IPA + 数据文件夹（默认）
+
+不加 `--no-split-data` 时，每次出包都是拆分模式。IPA 里只有 app（几十 MB），装和签都是秒级——免费 Apple ID 每 7 天重签
+一次也不用再搬几 GB；游戏数据放到 `<IPA>-data`：
+
+| 部分 | 是什么 | 什么时候要重拷 |
+|---|---|---|
+| `msl\` | 着色器库（`b-<chain>.img`） | 重编过着色器（换了壳或链版本） |
+| `romfs.img` | 游戏本体 | 同一个游戏重新出过包 |
+| `aoc\` | DLC（有才存在） | DLC 变了 |
+
+装好 IPA 先打开一次——它会提示找不到游戏文件，这是正常的。然后把文件夹里的内容拷进 app 的 Documents：
+
+- **Windows**：*Apple 设备*（或 iTunes）→ 你的设备 → *文件* → 这个 app → 把文件夹拖进去
+- **在设备上**：*文件* → *我的 iPhone/iPad* → 这个 app，从 U 盘、局域网共享或 iCloud 云盘拷进来
+
+彻底关掉 app 再打开。之后重签 IPA **不会动 Documents**，所以数据是**每个游戏版本拷一次**，不是每次重签都拷。三部分各自
+独立，重编着色器后可以只拷 `msl\`，不用碰几 GB 的游戏本体。文件夹里的 `split.tsv` 记着游戏和链版本；链版本对不上时 app
+会拒绝用旧的着色器库，日志里会写。
+
+`--split-data DIR` 指定别的输出目录；`--no-split-data` 回到"所有东西装进一个 IPA"的老做法。
+
 ## 金手指（Atmosphère 格式）
 
 启动页里有「金手指」分区，**不用装任何额外工具**：

@@ -72,6 +72,31 @@ on the phone.
 - `--clean <game folder>` clears out what an earlier run left
 - a cartridge dump (`.xci`) gets a `<file>.xci.tid` next to it on the first pack, so the next one does not unpack it again
 
+### Split builds: app-only IPA + data folder (default)
+
+Every pack is a split build unless `--no-split-data` is given. The IPA carries only the app — tens of MB, so it signs and
+installs in seconds and re-signing it every 7 days with a free Apple ID costs nothing; the game's data goes to
+`<IPA>-data`:
+
+| Part | What it is | Copy it again when |
+|---|---|---|
+| `msl\` | the shader libraries (`b-<chain>.img`) | the shaders were rebuilt (a new shell or chain version) |
+| `romfs.img` | the game's own files | a new build of the same game |
+| `aoc\` | add-on content (DLC), when the game has any | the DLC changed |
+
+Install the IPA and open it once — it says the game files are missing, which is expected. Then copy the folder's contents
+into the app's Documents:
+
+- **Windows**: *Apple Devices* (or iTunes) → your device → *Files* → the app → drag them in
+- **On the device**: *Files* → *On My iPhone/iPad* → the app, from a USB drive, a network share or iCloud Drive
+
+Close the app fully and open it again. Re-signing the IPA later leaves Documents alone, so the data is copied **once per
+build of the game**, not once per re-sign. The three parts are separate files, so a rebuilt shader library can be copied on
+its own without touching the many-GB game files. `split.tsv` in the folder names the game and the chain version it was
+built for; the app refuses libraries from another chain version and says so in the log.
+
+`--split-data DIR` puts the folder elsewhere; `--no-split-data` builds one IPA with everything inside, as before.
+
 ## Cheats (Atmosphère format)
 
 The launcher has a Cheats section; nothing extra to install:

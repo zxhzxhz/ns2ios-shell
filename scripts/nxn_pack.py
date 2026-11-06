@@ -2124,6 +2124,56 @@ def step_launcher(tid, patched, game, A, work):
     say('launcher settings: %s' % (r.stdout or ''))
 
 
+def step_split(A, data, tid):
+    """A split build: the app's data leaves the app, so the IPA holds the app alone.
+
+    msl/ (the shader libraries), romfs.img or romfs/ (the game's own files) and aoc/ (DLC) move to <data>, each as a part
+    of its own so any one can be copied again by itself. Moved, not copied: the staged app already holds them and a second
+    copy of a 16 GB game is what this route exists to avoid. dm/ios/Sources/main.m looks for <Documents>/msl,
+    <Documents>/romfs.img (or romfs/) and <Documents>/aoc before the app's own copies, and re-signing the IPA leaves
+    Documents alone, so the data is copied once per build of the game rather than once per re-sign.
+    """
+    data = Path(data)
+    if data.exists():
+        old = data.with_name(data.name + '.old')
+        shutil.rmtree(old, ignore_errors=True)
+        data.rename(old)
+        warn('the previous data folder was kept as %s (delete it once the new copy is on the phone)' % old.name)
+    data.mkdir(parents=True, exist_ok=True)
+    moved = []
+    for name in ('msl', 'romfs.img', 'romfs', 'aoc'):
+        src = A / name
+        if src.exists():
+            shutil.move(str(src), str(data / name))
+            moved.append(name)
+
+    def size(p):
+        return sum(f.stat().st_size for f in p.rglob('*') if f.is_file()) if p.is_dir() else p.stat().st_size
+    chain = ''
+    for p in (sorted((data / 'msl').glob('b-*')) if (data / 'msl').is_dir() else []):
+        chain = p.name[2:-4] if p.name.endswith('.img') else p.name[2:]
+        break
+    (data / 'split.tsv').write_text(
+        'game\t%s\nchain\t%s\n' % (tid, chain) + ''.join('%s\t%d\n' % (n, size(data / n)) for n in moved),
+        encoding='utf-8')
+    (data / 'README.txt').write_text(
+        '%s: split build - the IPA is the app alone, and this folder is the game\n\n'
+        'Install the IPA and open it once: it says the game files are missing (that is expected).\n'
+        'Then copy this folder\'s contents into the app\'s Documents:\n\n'
+        '  Windows:     Apple Devices app (or iTunes) > your device > Files > the app > drag them in\n'
+        '  iPhone/iPad: Files app > On My iPhone/iPad > the app, from a USB drive, a network share or iCloud Drive\n\n'
+        '  msl/        the shader libraries - copy it again only after the shaders were rebuilt\n'
+        '  romfs.img   the game\'s own files - copy it again only after a new build of the same game\n'
+        '  aoc/        add-on content (DLC), when the game has any\n\n'
+        'Close the app fully and open it again. Re-signing the IPA later leaves Documents alone.\n'
+        'split.tsv names the game and the shader chain version this folder was built for.\n' % tid,
+        encoding='utf-8')
+    say('split build: the app alone goes into the IPA, the game data to %s' % data)
+    for n in moved:
+        say('  %-9s %8.1f MB' % (n, size(data / n) / 1048576))
+    return data
+
+
 def step_pack(A, out_ipa, rows, work):
     """pack_ipa.py packs straight from the folders, streaming the big ones and keeping the executable bit."""
     app = 'Payload/%s' % A.name
@@ -2190,6 +2240,12 @@ def main():
                     help='folder holding the nx_extract, dmsh_xlate, spirv-cross, glslangValidator and zstd executables '
                          '(the windows-tools CI artifact, packed as nxnative-windows-tools.zip). They are put on PATH and '
                          'used instead of building anything.')
+    ap.add_argument('--split-data', nargs='?', const='1', metavar='DIR',
+                    help='default: the IPA holds the app alone and the game data (msl/, romfs.img, aoc/) goes to '
+                         '<IPA>-data, which the player copies into the app\'s Documents; DIR names another folder')
+    ap.add_argument('--no-split-data', dest='split_data', action='store_const', const='0',
+                    help='one IPA with the game files inside, as before')
+    ap.set_defaults(split_data='1')
     a = ap.parse_args()
     if a.capture_gl and a.shell and not a.nsp_dir:      # capture mode's only positional is the game folder
         a.shell, a.nsp_dir = '', a.shell
@@ -2663,11 +2719,18 @@ def main():
     # below is only reached by a run that packs).
     if a.stop_after == 'assemble':
         return say('stopped before packing: the app tree is %s' % stage)
+    data_dir = None
+    if a.split_data and a.split_data != '0':
+        data_dir = (Path(a.split_data).resolve() if a.split_data not in ('1', 'YES')
+                    else out_ipa.with_name(out_ipa.stem + '-data'))
+        step_split(A, data_dir, tid)
+        lap('split the game data out')
     step_pack(A, out_ipa, rows, work)
     lap('pack the IPA')
     say('done: %s (%.0f MB)' % (out_ipa, out_ipa.stat().st_size / 1048576))
+    if data_dir: say('     + %s (copy its contents into the app\'s Documents; README.txt inside)' % data_dir)
     say('next: sign it with a sideloading tool (SideStore / Sideloadly / LiveContainer) and install it on the phone')
-    say('this IPA contains your game files: for your own use only, do not distribute it')
+    say('this package contains your game files: for your own use only, do not distribute it')
 
     # The IPA is written and closed, so the working tree is spent: everything in it was either derived from the game files
     # (a rerun redoes it) or copied into the package. Removing it is the default because it is several times the size of
