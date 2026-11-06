@@ -642,7 +642,7 @@ HLE_FORCE("_ZN2nn2fs12MountRamDiskEPKcPvm", "fsp-srv; RAM disk → host director
     return ram_mount(name);
 }
 static void ram_disk_ensure(void) {
-    if (!dm_main_imports("_ZN2nn2fs12MountRamDiskEPKcPvm")) return;
+    if (!dm_game_imports("_ZN2nn2fs12MountRamDiskEPKcPvm")) return;
     ram_mount("ram");
 }
 // Cache storage (Tears of the Kingdom; its first list call opened fsp-srv and aborted in sm::Initialize): storage <index> is the host folder <temporary storage>_cache<index>,
