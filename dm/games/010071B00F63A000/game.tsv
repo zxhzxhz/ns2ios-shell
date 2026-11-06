@@ -1,0 +1,41 @@
+# Provisional game profile (written on Windows from dm/games/profile_guess.py, not checked by hand)
+# Eastward, SDK 16, from I:\APP\ns2ios-shell\workingdir\eastward_survey\extract
+
+# ---- Identity ----
+title_id	010071B00F63A000
+program_id	010071B00F63A000
+
+# ---- App ----
+name	Eastward
+ipa	Eastward.ipa
+app_category	public.app-category.games
+
+# ---- Versions ----
+build	v589824	1.2.1	main=42dce9ac5414038008cd642607928597	subsdk1=e0d8adcc446cf14d6af1a51193f72e30	sdk=3053b22935e32ddf15ef81997603e5c2
+package	v589824
+shader_versions	v589824
+
+# ---- Files ----
+# not loaded, main takes nothing from them the host does not supply: subsdk0 (NintendoSDK_OpenGL)
+modules	main subsdk1 sdk
+romfs_marker	game/audio/d8ef0cabb7fdb2fdf7595daa87ab0f8a/Build/Switch/Music.bank
+zip_store	.bank:.g:.png:.metallib
+
+# ---- Memory ----
+# main sets a heap of at most the pool − 64 MB: a 3328 MB heap region
+mem_reserve	0x100000000
+mem_alias	0x10000000
+mem_stack	0x10000000
+app_pool	0xCD500000
+# the NPDM declares 0 MB of system resource: IsVirtualAddressMemoryEnabled is false, as on Horizon (Big Brain Academy: Brain vs. Brain sets a heap only then)
+sys_resource	0x0
+
+# ---- Shader split ----
+shader_groups	/game/=game /glslc_capture/=runtime
+# The game compiles its GLSL at run time with its own GLSLC (main imports glslcCompile/glslcInitialize; subsdk1 is GLSLC,
+# subsdk0 NintendoSDK_OpenGL is not loaded). No game file holds those outputs, so /glslc_capture/ holds what a run captured
+# with DM_GLSLC_CAPTURE (dm/host/hle_glslc.c) -- the same route as 010055D009F78000's built-in shaders.
+# The capture vehicle's own switch: docs/CAPTURE.md's route, for a game that compiles with the SDK's GLSLC instead of
+# Vulkan's or GL's. Relative to Documents (main.m chdir's there); hle_glslc.c creates the folder on the first compile.
+glslc_capture	glslccap
+shader_note	Eastward shaders (provisional profile; the GLSL the game compiles at run time is not in any file)

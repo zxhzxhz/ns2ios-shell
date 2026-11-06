@@ -254,6 +254,11 @@ COMPUTE_2021_3 = COMPUTE_2022_3.replace(
 # The hash is not MADiSON's alone: the release dumps of 2020.3.0f1, 18f1, 27f1, 30f1 and 48f1 all give it.
 # The 2021.3 layout (variantMap, unaligned staticvector threadGroupSize) without the kernel's trailing SInt64 requirements.
 COMPUTE_2020_3 = COMPUTE_2021_3.replace('; SInt64 requirements', '')
+# The Unity 6000.3.5f2 ComputeShader (Citizen Sleeper 2: Starward Vector), from AssetRipper's StructsDump/release/6000.3.5f2.dump, class 72: a resource records its
+# type as well ("resType"), and threadGroupSize is a staticvector like 2021.3's. All 21 kernels of the game (hash 43a0948a3f403068c0b31bff90ba0c9a) read to their exact ends.
+COMPUTE_6000_3 = COMPUTE_2022_3.replace(
+    'int samplerBindPoint; int texDimension\n', 'int samplerBindPoint; int texDimension; int resType\n').replace(
+    'vector<data:unsigned int>~ threadGroupSize', 'staticvector<data:unsigned int>~ threadGroupSize')
 # Unity 2019.4.27f1's release tree (AssetRipper TypeTreeDumps, StructsDump/release/2019.4.27f1.dump): kernels hold code directly, without keyword variants or requirements.
 # Pokemon Brilliant Diamond's stripped built-ins use this hash; their GPU skinning dispatch needs these kernels. Checked against the dump's nodes and alignment flags.
 COMPUTE_2019_4 = '''ComputeShaderResource: string name; string generatedName; int bindPoint; int samplerBindPoint; int texDimension
@@ -323,6 +328,7 @@ KNOWN_TREES = {(CLASS_SHADER, bytes.fromhex('4496e93f2179252104401c8dda0a1751'))
                (CLASS_SHADER, bytes.fromhex('266d53113fa30d2b858f2768f92eaa14')): ('Shader', SHADER_2017_4),
                (CLASS_COMPUTE_SHADER, bytes.fromhex('43a0948a3f403068c0b31bff90ba0c9a')): ('ComputeShader', COMPUTE_6000_3),
                (CLASS_COMPUTE_SHADER, bytes.fromhex('bfdf63ab0ce84d5a2c765ee560d90fe7')): ('ComputeShader', COMPUTE_2022_3),
+               (CLASS_COMPUTE_SHADER, bytes.fromhex('43a0948a3f403068c0b31bff90ba0c9a')): ('ComputeShader', COMPUTE_6000_3),
                (CLASS_COMPUTE_SHADER, bytes.fromhex('abd9135b8ce83d043fef4e9ec7f53366')): ('ComputeShader', COMPUTE_2021_3),
                (CLASS_COMPUTE_SHADER, bytes.fromhex('d0171b849bb064b2424893e7d4809be5')): ('ComputeShader', COMPUTE_2020_3),
                (CLASS_COMPUTE_SHADER, bytes.fromhex('1a95529ac2eb1a97cd9d2a4356bd722f')): ('ComputeShader', COMPUTE_2019_4),

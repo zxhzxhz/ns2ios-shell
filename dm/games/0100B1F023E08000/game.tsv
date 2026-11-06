@@ -1,0 +1,36 @@
+# Provisional game profile (written on Windows from dm/games/profile_guess.py, not checked by hand)
+# Is This Seat Taken?, SDK 19, from I:\APP\ns2ios-shell\workingdir\0100B1F023E08000_pack\extract\v65536
+
+# ---- Identity ----
+title_id	0100B1F023E08000
+program_id	0100B1F023E08000
+
+# ---- App ----
+name	Is This Seat Taken?
+ipa	IsThisSeatTaken.ipa
+app_category	public.app-category.games
+
+# ---- Versions ----
+build	v65536	1.0.1	main=a9510b2544751edb00bbee2fe7c164b7	subsdk0=e2970aa61f198ea32fbb247932d90406	sdk=d83a56a5558798414c78ec722867a7da
+package	v65536
+shader_versions	v65536
+
+# ---- Files ----
+# every module main imports from
+modules	main subsdk0 sdk
+romfs_marker	Data\sharedassets0.resource
+zip_store	.dat:.png:.resource:.ress:.metallib
+
+# ---- Memory ----
+# Unity 2022.3.58f1 IL2CPP: the 7 GB alias layout (PITFALLS rule 7). profile_guess guesses 4.375 GB, which a Unity TLSF heap
+# runs dry on; the device log ([mem] alias region mapped up to +X GB) gives the real high-water mark later.
+mem_reserve	0x210000000
+mem_alias	0x1C0000000
+mem_stack	0x10000000
+app_pool	0xCD500000
+# the NPDM declares 16 MB of system resource
+sys_resource	0x1000000
+
+# ---- Shader split ----
+shader_groups	/Data/=data
+shader_note	Is This Seat Taken? shaders (provisional profile)

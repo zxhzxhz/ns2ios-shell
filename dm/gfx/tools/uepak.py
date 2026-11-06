@@ -51,8 +51,16 @@ FREQ = {0: 'vs', 1: 'hs', 2: 'ds', 3: 'ps', 4: 'gs', 5: 'cs'}   # EShaderFrequen
 
 _cc = None
 def aes_decrypt(key, data):
-    """AES-256 ECB decryption through CommonCrypto (every Mac has it; no Python package needed)"""
+    """AES-256 ECB decryption through CommonCrypto (every Mac has it; no Python package needed).
+
+    Windows (this fork): CommonCrypto does not exist there, so the same AES-256-ECB goes through the `cryptography`
+    package, which the packer's other tools already require. Same interface, same output; nothing else in the pak reader
+    is platform-specific."""
     global _cc
+    if sys.platform != 'darwin':
+        from cryptography.hazmat.primitives.ciphers import Cipher, algorithms, modes
+        d = Cipher(algorithms.AES(key), modes.ECB()).decryptor()
+        return d.update(data) + d.finalize()
     if _cc is None:
         _cc = ctypes.CDLL('/usr/lib/libSystem.B.dylib').CCCrypt
         _cc.restype = ctypes.c_int32

@@ -40,7 +40,7 @@ nxnative-windows-tools.zip holds all five, so nothing has to be installed by han
 
 Only your own game files go in, and the IPA it produces contains them: it is for your own use, do not distribute it.
 """
-import argparse, concurrent.futures as cf, json, os, plistlib, re, shlex, shutil, struct, subprocess, sys, tempfile, time, zipfile
+import argparse, concurrent.futures as cf, json, os, plistlib, re, shlex, shutil, struct, subprocess, sys, tempfile, threading, time, zipfile
 from pathlib import Path
 
 PY = sys.executable
@@ -79,13 +79,48 @@ def lap(what):
     say('%s: %.1f s' % (what, now - _LAP[0]))
     _LAP[0] = now
 
+def is_reparse(p):
+    """A Windows directory junction is neither a symlink nor an ordinary directory: is_symlink() is False and is_dir() is
+    True, so both rmtree and os.walk walk straight into it. README 规矩 8 puts the shader cache and the shader library
+    output on another disk behind exactly such a junction; recursing into one would delete that disk's contents and then
+    fail to remove the link. Windows-only attribute; everywhere else this is always False."""
+    try:
+        return bool(os.stat(p, follow_symlinks=False).st_file_attributes & 0x400)   # FILE_ATTRIBUTE_REPARSE_POINT
+    except (OSError, AttributeError):
+        return False
+
+
+def remove_tree(path):
+    """shutil.rmtree that removes a junction (or a symlink) instead of walking into it."""
+    if is_reparse(path):
+        os.rmdir(path); return
+    for e in os.scandir(path):
+        p = e.path
+        if is_reparse(p):
+            try:
+                if e.is_dir(follow_symlinks=False): os.rmdir(p)   # the link only; the target stays
+                else: os.unlink(p)
+            except OSError: pass
+        elif e.is_dir(follow_symlinks=False):
+            remove_tree(p)
+        else:
+            try: os.unlink(p)
+            except FileNotFoundError: pass
+    os.rmdir(path)
+
 
 def folder_size(p):
-    """Bytes under p, without following a symlink out of it: the game's RomFS can be large and the count is only a report."""
+    """Bytes under p, without following a symlink or a junction out of it: the game's RomFS can be large and the count is
+    only a report. Counting through a junction would report another disk's bytes as freed by this one."""
     n = 0
-    for root, dirs, files in os.walk(p, followlinks=False):
-        for f in files:
-            try: n += os.lstat(os.path.join(root, f)).st_size
+    if is_reparse(p): return 0
+    try: entries = list(os.scandir(p))
+    except OSError: return 0
+    for e in entries:
+        if is_reparse(e.path): continue
+        if e.is_dir(follow_symlinks=False): n += folder_size(e.path)
+        else:
+            try: n += e.stat(follow_symlinks=False).st_size
             except OSError: pass
     return n
 
@@ -104,14 +139,20 @@ def tidy(work, keep_logs=True):
         if keep_logs and d.name == 'logs': continue
         if d.parent.resolve() != root:
             warn('not removing %s: it is not inside %s' % (d, work)); continue
-        n = folder_size(d) if d.is_dir() and not d.is_symlink() else d.lstat().st_size
+        # A junction is a name for a directory on another disk (the shader cache, README 规矩 8): it counts as 0 bytes
+        # here and is unlinked, never emptied.
+        link = d.is_symlink() or is_reparse(d)
+        n = folder_size(d) if d.is_dir() and not link else 0
         try:
-            if d.is_dir() and not d.is_symlink(): shutil.rmtree(d)
+            if is_reparse(d): os.rmdir(d)
+            elif d.is_symlink(): d.unlink()
+            elif d.is_dir(): remove_tree(d)
             else: d.unlink()
         except OSError as e:
             warn('could not remove %s (%s): leaving it' % (d.name, e)); continue
         total += n
-        say('  removed %-12s %9.1f MB' % (d.name + ('/' if d.is_dir() else ''), n / 1048576))
+        say('  removed %-12s %9.1f MB%s' % (d.name + ('/' if d.is_dir() else ''), n / 1048576,
+                                           ' (a link to another disk: the contents stay)' if link else ''))
     return total
 
 
@@ -1563,22 +1604,64 @@ def map_overflow(pkg_dir, table):
     return None
 
 
+def shader_has_library(d, key):
+    """Whether key has what the phone loads: <key>_b.metallib, or a geometry shader dmsh_build.py gives no library on
+    purpose (finish(): a gs_slice record, drawn with the vertex shader's layer entry points, its reflection JSON is all
+    it ships). The distinction matters to every count that compares libraries with the shader map."""
+    if (d / (key + '_b.metallib')).is_file(): return True
+    j = d / (key + '_b.json')
+    if not j.is_file(): return False
+    try: return bool(json.loads(j.read_text(encoding='utf-8')).get('gs_slice'))
+    except Exception: return False
+
+
+def shader_library_count(iosout):
+    """How many shader libraries a running dmsh_build.py has produced so far, for the progress line: the same file name
+    the final check reads (shader_has_library). A work folder that survived an interrupted run or an older chain version
+    holds one b-<V> per run, so only the newest is counted."""
+    libs = [p for p in iosout.glob('b-*') if p.is_dir()] if iosout.is_dir() else []
+    if not libs: return 0
+    d = max(libs, key=lambda p: (p.stat().st_mtime, p.name))
+    # endswith is enough: the side and mesh libraries end in _bv/_bp/_ba/_bl/_m3, never in _b
+    return sum(1 for n in os.listdir(d) if n.endswith('_b.metallib'))
+
+
 def step_translate(pkg, work, xlate, iosout, tid, force=False):
     """dmsh_build.py, with no metal compiler: nometal_run.py turns `xcrun metal` into a copy, so the "libraries" hold MSL
     source and the phone compiles them once on first launch. dmsh_build.py creates <iosout>/b-<chain version> itself."""
-    # Completeness is decided by the per-shader results dmsh_build.py writes, not by "some file is there": a run that was
+    # Completeness is decided per shader key against the shader map, not by "some file is there": a run that was
     # interrupted leaves libraries behind, and trusting them would ship a package that only fails on the phone.
-    #
-    # Which directory counts matters as much as completeness. The chain version moves whenever one of the files the
-    # translation hashes changes, and a base move changes several, so a work folder that survived earlier runs holds a
-    # complete library of the OLD chain. Taking "the last b-*/_b_build.json" then reuses it and the package ships shaders
-    # translated by the old toolchain -- and nothing on the phone says so, because the shell accepts whatever one chain
-    # directory the package carries. 2026-11-03: a package built after the base move kept the previous day's shaders, so
-    # the LDSM fix (an 8x8 lattice of garbage in Bananza's upscaler) was still in it. Ask the toolchain for its version.
-    cache = work / 'shader' / 'cache'
-    nometal = GFX / 'nometal_run.py'
+    # DM_SHADER_CACHE names the cache folder: the keys carry the compiler's fingerprint, and nometal_run.py and
+    # metal_win_run.py both answer "none" to `metal --version` -- a nometal entry says "this MSL source is the library",
+    # so the two must not share a folder (docs/WINDOWS-METAL.md).
+    cache = work / 'shader' / (os.environ.get('DM_SHADER_CACHE') or 'cache')
+    def map_keys():
+        smap = work / 'shader' / 'tables' / 'shader_map.tsv'
+        if not smap.is_file(): return []
+        return sorted({c[3] for c in (l.split('\t') for l in smap.read_text(errors='replace').splitlines())
+                       if len(c) >= 4 and re.fullmatch(r'[0-9a-f]{16}', c[3])})
+    def done():
+        marks = sorted(cache.glob('b-*/_b_build.json'))
+        if not marks: return False
+        try: res = json.load(open(marks[-1], encoding='utf-8'))
+        except Exception: return False
+        if not res or any(r.get('st') != 'ok' for r in res): return False
+        d = iosout / marks[-1].parent.name
+        if not d.is_dir(): return False
+        keys = map_keys() or [r['key'] for r in res]
+        return all(shader_has_library(d, k) for k in keys)
+    if not force and done():
+        say('shader libraries already there'); return
+    need_tool('spirv-cross', 'translate SPIR-V to Metal Shading Language',
+              'install Vulkan SDK 1.4.357.0 (its Bin/ holds spirv-cross.exe) or build SPIRV-Cross at tag vulkan-sdk-1.4.357.0')
+    # DM_TOOL_RUNNER swaps the subprocess layer: nometal_run.py (the default) copies the MSL and the phone compiles it on
+    # first launch; metal_win_run.py hands the same commands to Apple's Metal Developer Tools for Windows, so the package
+    # ships real MTLB (docs/WINDOWS-METAL.md). The chain version is the same either way -- both answer "none" to
+    # `metal --version` -- so a shell built for one loads the other. DM_SHADER_CACHE names the cache folder the two must
+    # not share: its keys carry that "none" fingerprint, and a nometal entry says "this MSL source is the library".
+    nometal = Path(os.environ['DM_TOOL_RUNNER']) if os.environ.get('DM_TOOL_RUNNER') else GFX / 'nometal_run.py'
     if not nometal.is_file():
-        die('dm/gfx/tools/nometal_run.py is missing (it is what makes this work without Apple\'s compiler)')
+        die('%s is missing (it is what makes this work without Apple\'s compiler)' % nometal)
     # dmsh_build.py refuses to start when the toolchain does not match dmsh_chain.lock, which on a machine using the
     # prebuilt executables it never will: register this machine first. That rewrites dmsh_chain.lock and the profile's
     # dmsh_chain.h. It has to happen BEFORE the chain version is read, because the version hashes that lock: asking first
@@ -1616,15 +1699,35 @@ def step_translate(pkg, work, xlate, iosout, tid, force=False):
     # when the toolchain lock changes. It reads the tables, so it costs nothing to do every time.
     run([PY, nometal, GFX / 'dmsh_chain.py', '--header'], env=genv,
         log=work / 'logs' / 'chain_header.log', what='dmsh_chain --header')
-    run([PY, nometal, GFX / 'dmsh_build.py', pkg, work / 'shader' / 'cache'],
-        env={'IOSOUT': iosout, 'XLATE': xlate, 'WORK': work, 'J': os.environ.get('J', '8'), 'DM_GAME': tid},
-        log=work / 'logs' / 'shaders.log', what='translating shaders to Metal source')
-    # Proof, not a promise: the directory the build just made has to be the chain this run read before it started. The
-    # line above says what was asked for; only this says what was produced (2026-11-03: they differed).
-    made = [p.name for p in iosout.glob('b-*') if p.is_dir()] if iosout.is_dir() else []
-    if cur and ('b-' + cur) not in made:
-        warn('the shader build made %s, but this run read chain %s: the package may carry another version\'s shaders'
-             % (', '.join(made) or 'nothing', cur))
+    # DMSH_TARGETS=ios: only the iOS libraries ship (the shell loads <App>/msl/b-<V>/), and this machine's "compiler" is
+    # nometal_run.py copying MSL, so the macOS half is the same bytes written a second time. Measured on a 50,978-shader
+    # pack: mac + ios ran 2 x 97,527 compiles and cache entries of which 97,527 were never read -- half the artifacts, a
+    # third of the cache files, ~3.6 minutes. The macOS sources and reflection JSON are still written: c1_full.tsv and
+    # cb_extent.tsv are made from them.
+    # J: 8 was sized for a GIL-bound thread pool. This build reaches only 4.5-5.5 threads on 16 logical cores (measured:
+    # 5.5x parallelism on a 292-shader profile), and 16 was 14% faster than 8 while 32 was slower again.
+    # The step takes minutes to hours, and a line at each end of it says nothing about whether it is moving: report
+    # every 1000 libraries, counted from the folder the final check reads rather than from a counter inside
+    # dmsh_build.py -- editing that file changes CODE_FP, which rebuilds every shader in every work folder. A listing of
+    # the folder every 5 s costs 8 ms at 3,759 shaders and ~0.1 s at 50,978: nothing against the seconds one shader takes.
+    total = len(map_keys())
+    stop = threading.Event()
+    def report():
+        seen = 0
+        while not stop.wait(5.0):
+            n = shader_library_count(iosout) // 1000
+            if n > seen: seen = n; say('complete %d/%d' % (n * 1000, total))
+    th = threading.Thread(target=report, daemon=True)
+    if total: th.start()
+    try:
+        run([PY, nometal, GFX / 'dmsh_build.py', pkg, cache],
+            env={'IOSOUT': iosout, 'XLATE': xlate, 'WORK': work, 'J': os.environ.get('J', '16'), 'DM_GAME': tid,
+                 'DMSH_TARGETS': os.environ.get('DMSH_TARGETS', 'ios')},
+            log=work / 'logs' / 'shaders.log',
+            what='translating shaders to Metal source' + ('(total %d shaders)' % total if total else ''))
+    finally:
+        stop.set()
+        if th.is_alive(): th.join()
     # Report per directory: a work folder that survived an interrupted run holds one b-<V> per chain version, and the
     # sum of them reads as a healthy build while the directory that gets shipped holds a handful.
     libs = sorted((p for p in iosout.glob('b-*') if p.is_dir()), key=lambda d: (d.stat().st_mtime, d.name)) if iosout.is_dir() else []
@@ -1729,7 +1832,7 @@ def env_for(rows, gdir=None):
     # even when the profile sets it ("on iOS only DM_UE_TEXTURE_POOL turns it on, until an iPhone run shows the memory fits"), so
     # writing the profile's value would turn on for every Unreal game what upstream keeps off on an iPhone.
     for k, ev in (('core_preempt', 'DM_PREEMPT'), ('vconv_range', 'DM_NVN_VCONV_RANGE'),
-                  ('enc_thread', 'DM_NVN_ENC_THREAD')):
+                  ('enc_thread', 'DM_NVN_ENC_THREAD'), ('pkg_reupload', 'DM_NVN_PKG_REUPLOAD')):
         v = one(rows, k)
         if v: lines.append('%s=%s' % (ev, '1' if truthy(v) else '0'))
     # The keys whose host read a compiled-in constant and nothing else (no getenv at all: dm/gfx/nvn/hle_nvn.c, dm/gfx/nvn/nvn_mtl.m,
@@ -2511,20 +2614,18 @@ def main():
                  % (iosout, len(libs), ', '.join(d.name for d in libs), msl_out.name))
         # A short library is the failure that only shows up on the phone (every missing shader prints [RED] and draws
         # nothing, with the sound still playing), so check it against the shader map the app will get before packing.
-        want = set()
         smap = gdir / 'shader_map.tsv'
         if not smap.is_file(): smap = work / 'shader' / 'tables' / 'shader_map.tsv'
-        if smap.is_file():
-            for line in smap.read_text(errors='replace').splitlines():
-                c = line.split('\t')
-                # the file opens with a column-title row ("package index stage dm_ctl_sha16 source") that is not a
-                # comment, so the key has to look like one: 16 hex digits
-                if len(c) >= 4 and re.fullmatch(r'[0-9a-f]{16}', c[3]): want.add(c[3])
-        have = len(list(msl_out.glob('*_b.metallib')))
-        if want and have < len(want):
-            die('%s has %d shader libraries but shader_map.tsv lists %d shaders: %d would draw nothing on the phone. '
-                'Delete %s and pack again (a directory left by an interrupted run is the usual cause)'
-                % (msl_out.name, have, len(want), len(want) - have, work))
+        want = sorted({c[3] for c in (l.split('\t') for l in smap.read_text(errors='replace').splitlines())
+                       if len(c) >= 4 and re.fullmatch(r'[0-9a-f]{16}', c[3])}) if smap.is_file() else []
+        # A geometry shader with no library is not a hole: dmsh_build.py ships its reflection JSON alone (gs_slice,
+        # drawn with the vertex shader's layer entry points), so the count goes by what the phone actually loads.
+        missing = [k for k in want if not shader_has_library(msl_out, k)]
+        have = len(want) - len(missing)
+        if missing:
+            die('%s has %d shader libraries but shader_map.tsv lists %d shaders: %d would draw nothing on the phone '
+                '(first missing key %s). Delete %s and pack again (a directory left by an interrupted run is the usual cause)'
+                % (msl_out.name, have, len(want), len(missing), missing[0], work))
         say('shader libraries: %s (%d of %d shaders)' % (msl_out.name, have, len(want) or have))
     if a.stop_after == 'guest': return say('stopped before assembly')
 

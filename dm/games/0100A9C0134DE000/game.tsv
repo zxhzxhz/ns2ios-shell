@@ -1,0 +1,40 @@
+# Provisional game profile (written on Windows from dm/games/profile_guess.py, not checked by hand)
+# Lyrica2 Stars align, SDK 19, from I:\APP\ns2ios-shell\workingdir\recon\lyrica2
+
+# ---- Identity ----
+title_id	0100A9C0134DE000
+program_id	0100A9C0134DE000
+
+# ---- App ----
+name	Lyrica2 Stars align
+ipa	Lyrica2Starsalign.ipa
+app_category	public.app-category.games
+# a touch rhythm game: nn::hid's touch screen reports points only in handheld mode (hle_hid.c touch_read writes an empty
+# state in console mode), and every touch goes to the game rather than to a drawn control (pad_layout touch)
+op_mode	handheld
+perf_mode	follow
+pad_layout	touch
+
+# ---- Versions ----
+build	v196608	1.4.0	main=039d9876893e1136ab5233277f7a8015	subsdk0=e2970aa61f198ea32fbb247932d90406	sdk=d83a56a5558798414c78ec722867a7da
+package	v196608
+shader_versions	v196608
+
+# ---- Files ----
+# every module main imports from
+modules	main subsdk0 sdk
+romfs_marker	Data\resources.assets
+zip_store	.assets:.dat:.resource:.ress:.metallib
+
+# ---- Memory ----
+# the NPDM declares 16 MB of system resource (virtual address memory) and main sets a heap: a 5 GB block with a large alias region; the heap check sizes the heap region from the heap the game asks for
+mem_reserve	0x140000000
+mem_alias	0x118000000
+mem_stack	0x10000000
+app_pool	0xCD500000
+# the NPDM declares 16 MB of system resource
+sys_resource	0x1000000
+
+# ---- Shader split ----
+shader_groups	/=romfs
+shader_note	Lyrica2 Stars align shaders (provisional profile)

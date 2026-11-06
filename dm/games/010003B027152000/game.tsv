@@ -1,0 +1,35 @@
+# Provisional game profile (written on Windows from dm/games/profile_guess.py, not checked by hand)
+# Whisper of the House, SDK 18, from I:\APP\ns2ios-shell\workingdir\010003B027152000_pack\extract\v196608
+
+# ---- Identity ----
+title_id	010003B027152000
+program_id	010003B027152000
+
+# ---- App ----
+name	Whisper of the House
+ipa	WhisperoftheHouse.ipa
+app_category	public.app-category.games
+
+# ---- Versions ----
+build	v196608	1.2.0.9	main=0b28761b850db1c7ba59e6b9eeb1b7ba	subsdk0=70c0cf24c06e016d041fbf25a9aaba96	sdk=f9ed9d26b4ad414362affee1658db28a
+package	v196608
+shader_versions	v196608
+
+# ---- Files ----
+# every module main imports from
+modules	main subsdk0 sdk
+romfs_marker	Data\StreamingAssets\aa\Switch\sharedlevelitemgroup_assets_all_e2c57bdcf03f7be78713d199470f8528.bundle
+zip_store	.assets:.bnk:.bundle:.dat:.json:.resource:.ress:.wem:.metallib
+
+# ---- Memory ----
+# the NPDM declares 16 MB of system resource (virtual address memory) and main sets a heap: a 5 GB block with a large alias region; the heap check sizes the heap region from the heap the game asks for
+mem_reserve	0x210000000
+mem_alias	0x1C0000000
+mem_stack	0x10000000
+app_pool	0xCD500000
+# the NPDM declares 16 MB of system resource
+sys_resource	0x1000000
+
+# ---- Shader split ----
+shader_groups	/=romfs
+shader_note	Whisper of the House shaders (provisional profile)

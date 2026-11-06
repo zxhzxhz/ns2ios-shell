@@ -1,0 +1,36 @@
+# Provisional game profile (written on Windows from dm/games/profile_guess.py, not checked by hand)
+# GIRLS MADE PUDDING, SDK 19, from I:\APP\ns2ios-shell\workingdir\0100D11022B68000_pack\probe
+
+# ---- Identity ----
+title_id	0100D11022B68000
+program_id	0100D11022B68000
+
+# ---- App ----
+name	GIRLS MADE PUDDING
+ipa	GIRLSMADEPUDDING.ipa
+app_category	public.app-category.games
+
+# ---- Versions ----
+build	v393216	1.3.0	main=c58cae0d4225aeaa4720fbc040087fc0	subsdk0=e0ee365be8fb7ba6d2071082b5417b50	sdk=191086db0c8bb8477a320ccd7942a254
+package	v393216
+shader_versions	v393216
+
+# ---- Files ----
+# every module main imports from
+modules	main subsdk0 sdk
+romfs_marker	Data/StreamingAssets/aa/Switch/resident_assets_all_63c1cd760f5c86b99c3648f15cb4e812.bundle
+zip_store	.assets:.bundle:.dat:.ress:.metallib
+
+# ---- Memory ----
+# Unity 6000.0.35f1 (Addressables bundles): the repository rule for Unity is the big layout -- profile_guess's guess
+# (0x140000000 / 0x118000000) exhausted the alias region on every Unity game brought up so far
+mem_reserve	0x210000000
+mem_alias	0x1C0000000
+mem_stack	0x10000000
+app_pool	0xCD500000
+# the NPDM declares 16 MB of system resource
+sys_resource	0x1000000
+
+# ---- Shader split ----
+shader_groups	/Data/=data
+shader_note	GIRLS MADE PUDDING shaders (provisional profile)

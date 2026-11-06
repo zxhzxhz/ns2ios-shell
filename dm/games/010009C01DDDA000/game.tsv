@@ -1,0 +1,35 @@
+# Provisional game profile (written on Windows from dm/games/profile_guess.py, not checked by hand)
+# Yasha Legends of the Demon Blade, SDK 18, from I:\APP\ns2ios-shell\work-tmp\yasha_manifest
+
+# ---- Identity ----
+title_id	010009C01DDDA000
+program_id	010009C01DDDA000
+
+# ---- App ----
+name	Yasha Legends of the Demon Blade
+ipa	YashaLegendsoftheDemonBlade.ipa
+app_category	public.app-category.games
+
+# ---- Versions ----
+build	v0	1.0.0	main=2d45fe758e63d5164e065313dd4ac3c4	subsdk0=8a72a4dcbfd375d2952288284259da94	sdk=6075151627016eef437c1312f2e3ed56
+package	v0
+shader_versions	v0
+
+# ---- Files ----
+# every module main imports from
+modules	main subsdk0 sdk
+romfs_marker	Data/StreamingAssets/BGM.bank
+zip_store	.assets:.bank:.bundle:.dat:.json:.ress:.metallib
+
+# ---- Memory ----
+# the NPDM declares 16 MB of system resource (virtual address memory) and main sets a heap: a 5 GB block with a large alias region; the heap check sizes the heap region from the heap the game asks for
+mem_reserve	0x210000000
+mem_alias	0x1C0000000
+mem_stack	0x10000000
+app_pool	0xCD500000
+# the NPDM declares 16 MB of system resource
+sys_resource	0x1000000
+
+# ---- Shader split ----
+shader_groups	/Data/=data
+shader_note	Yasha Legends of the Demon Blade shaders (provisional profile)

@@ -1,0 +1,36 @@
+# Provisional game profile (written on Windows from dm/games/profile_guess.py, not checked by hand)
+# PATAPON 1+2 REPLAY, SDK 18, from I:\APP\ns2ios-shell\workingdir\01006DC020DB8000_pack\extract\v458752
+
+# ---- Identity ----
+title_id	01006DC020DB8000
+program_id	01006DC020DB8000
+
+# ---- App ----
+name	PATAPON 1+2 REPLAY
+ipa	PATAPON12REPLAY.ipa
+app_category	public.app-category.games
+
+# ---- Versions ----
+build	v458752	1.0.7	main=37182df10df0f74166a88c8ccfa8ab89	subsdk0=14765b1d77b12d8654ea87a61c65e2b1	sdk=f118ae1c2e7728471aaf1a0d58484968
+package	v458752
+shader_versions	v458752
+
+# ---- Files ----
+# every module main imports from
+modules	main subsdk0 sdk
+romfs_marker	Data/StreamingAssets/aa/Switch/132b52a4769f71296ee4bfc0ac75c33a.bundle
+zip_store	.bundle:.dat:.ress:.usme:.metallib
+
+# ---- Memory ----
+# Unity 2022.3.52f1 IL2CPP: the 7 GB alias layout (PITFALLS rule 7). profile_guess guesses 4.375 GB, which a Unity TLSF heap
+# runs dry on; the device log ([mem] alias region mapped up to +X GB) gives the real high-water mark later.
+mem_reserve	0x210000000
+mem_alias	0x1C0000000
+mem_stack	0x10000000
+app_pool	0xCD500000
+# the NPDM declares 16 MB of system resource
+sys_resource	0x1000000
+
+# ---- Shader split ----
+shader_groups	/Data/=data
+shader_note	PATAPON 1+2 REPLAY shaders (provisional profile)

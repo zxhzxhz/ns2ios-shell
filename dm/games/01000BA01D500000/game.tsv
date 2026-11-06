@@ -1,0 +1,35 @@
+# Provisional game profile (written on Windows from dm/games/profile_guess.py, not checked by hand)
+# Touhou Mystia's Izakaya, SDK 16, from workingdir\_touhou_probe
+
+# ---- Identity ----
+title_id	01000BA01D500000
+program_id	01000BA01D500000
+
+# ---- App ----
+name	Touhou Mystia's Izakaya
+ipa	TouhouMystiasIzakaya.ipa
+app_category	public.app-category.games
+
+# ---- Versions ----
+build	v131072	1.0.2	main=232b28fed05ed8195bb1d9fe4bb4d11d	subsdk0=091bc184412bfb0ec5e395eafa4f7dd1	sdk=12f161039300861f1054371f0e36b8c9
+package	v131072
+shader_versions	v131072
+
+# ---- Files ----
+# every module main imports from
+modules	main subsdk0 sdk
+romfs_marker	Data/StreamingAssets/aa/Switch/core_01d3011ba951ca84599ea62eba134fe3.bundle
+zip_store	.assets:.bundle:.dat:.resource:.metallib
+
+# ---- Memory ----
+# the NPDM declares 16 MB of system resource (virtual address memory) and main sets a heap: a 5 GB block with a large alias region; the heap check sizes the heap region from the heap the game asks for
+mem_reserve	0x210000000
+mem_alias	0x1C0000000
+mem_stack	0x10000000
+app_pool	0xCD500000
+# the NPDM declares 16 MB of system resource
+sys_resource	0x1000000
+
+# ---- Shader split ----
+shader_groups	/Data/=data
+shader_note	Touhou Mystia's Izakaya shaders (provisional profile)

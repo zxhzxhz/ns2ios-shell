@@ -69,6 +69,8 @@ KEY_SKIP = tuple(int(x, 0) for x in GAME.get('shader_key_skip', '0+0').split('+'
 # hle_glslc.c), the shader code archives of Unreal paks once decoded on the Mac (uepak.py, DM_OODLE_JOB, hle_oodle.c); the NSP script decides from the files which of the last two to make
 
 CTL_MAGIC, GFX_MAGIC, CS_MAGIC = bytes.fromhex('34127698'), bytes.fromhex('78563412'), bytes.fromhex('79563412')
+FABLFS_MAGIC = b'FAFULLFS'   # the archive of ほの暮しの庭's NMPL engine: its shader records hold a NVN control section and its code area back to back
+NRO_MAGIC = b'NRO0'          # a run-time module's header (at +0x10; some homebrew puts it at +0): ほの暮しの庭 keeps its whole on-screen shader set inside NmplDLL.nro
 STAGES = ['vs', 'hs', 'ds', 'gs', 'ps', 'cs']
 SPH_STAGE = {1: 'vs', 2: 'hs', 3: 'ds', 4: 'gs', 5: 'ps'}
 def sph_stage(code):
@@ -275,6 +277,37 @@ def bahs_variations(d, label, entries):
             if k > 1: continue   # compute and the other kinds pair with nothing
             if a in taken: BAHS_VAR[f'{label}#BAHS@{a:#x}'] = f'{label}#BAHS#prog{p}#var{seen[k]}'
             seen[k] += 1
+
+def nvn_tight_pairs(d):
+    """NVN control sections whose code area sits right after them — the shape ほの暮しの庭's NMPL engine compiles every shader into, both in its FAFULLFS RomFS archives and in the
+    engine module it loads at run time (NmplDLL.nro: 1,149 control sections, 918 distinct programs, where the game's whole on-screen pipeline comes from — the static archive holds only
+    198 of them). The control section's own length is at +0x20 (0x880 there) and the code area starts right after it at 16-byte alignment; the code length is at control +0x704, as
+    everywhere else. Only a pair whose lengths, code header and stage all check is taken, so an archive's neighbours (models, textures, text) and an NRO's code contribute nothing.
+    → [(offset, stage, control section, code area)]"""
+    out = []
+    for m in re.finditer(re.escape(CTL_MAGIC), d):
+        c = m.start()
+        if c & 3 or c + 0x708 > len(d): continue
+        nctl = struct.unpack_from('<I', d, c + 0x20)[0]
+        n = struct.unpack_from('<I', d, c + 0x704)[0]
+        if not (0x760 <= nctl <= 0x2000) or not (0x30 <= n <= 0x1000000): continue
+        ctl = d[c:c + nctl]
+        for k in (c + nctl, (c + nctl + 15) & ~15):
+            if k + n > len(d): continue
+            code = d[k:k + n]
+            st = glslc_stage(ctl, code)
+            if not st or check('', st, ctl, code): continue
+            out.append((c, st, ctl, code)); break
+    return out
+
+def fablfs_shaders(d, label):
+    """A FAFULLFS archive (ほの暮しの庭's RomFS: data/shader_1_00.dat, data/fairy_1_00.dat) — see nvn_tight_pairs"""
+    return [(f'{label}#FABLFS@{c:#x}', st, ctl, code) for c, st, ctl, code in nvn_tight_pairs(d)]
+
+def nro_shaders(d, label):
+    """The same pairs inside a run-time module (an NRO the game registers through nn::ro::LoadModule): ほの暮しの庭's NmplDLL.nro holds 1,149 of them, and every shader the game
+    draws with on screen comes from there — the RomFS archive alone leaves the screen black with sound and input working (the run log shows "shader … is not in the shader map")"""
+    return [(f'{label}#NRO@{c:#x}', st, ctl, code) for c, st, ctl, code in nvn_tight_pairs(d)]
 
 def mshd_shaders(d, label):
     out, c = [], d.find(CTL_MAGIC)
@@ -2530,6 +2563,8 @@ def scan_blob(d, label, out, depth=0, left=None):
     if d[:4] == b'BAHS': out.extend(bahs_shaders(d, label)); return
     if d[:4] == b'NDSR': out.extend(ndsr_shaders(d, label)); return
     if shaders := sead_prim_shaders(d, label): out.extend(shaders); return
+    if d[:8] == FABLFS_MAGIC: out.extend(fablfs_shaders(d, label)); return
+    if d[:4] == NRO_MAGIC or d[0x10:0x14] == NRO_MAGIC: out.extend(nro_shaders(d, label)); return
     if d[:len(TFXO)] == TFXO: out.extend(tfxo_shaders(d, label)); return
     if d[:4] == b'MSHD': out.extend(mshd_shaders(d, label)); return
     if d[:4] == PGDAT and len(d) >= 0x1c and (mem := pgdat_members(d, label)) is not None:   # PlatinumGames
@@ -2569,7 +2604,7 @@ def pixel_input_cover(shaders):
         k = min(ins, key=lambda k: (-len(ins[k] & left), k)); cover.append(k); left -= ins[k]
     return cover
 
-SINGLE_STAGE = ('#GLSLC@', '#VIPER', '#UE', '#MTSPK@', '#MGFX@', '#NLG', '#PGSO', '#RAW@', '#TFXO@', '#NEEDLE@', '#SNOWDROP@', '#PHYRE@', '#SUMO@', '#NVNSH@')   # sources whose every shader is a program of one stage: GLSLC outputs, Unreal's shader records, MT Framework's shader package (BNSH variations, Unity programs, MSHD and SDF pair theirs);
+SINGLE_STAGE = ('#GLSLC@', '#VIPER', '#UE', '#MTSPK@', '#MGFX@', '#NLG', '#PGSO', '#RAW@', '#TFXO@', '#NEEDLE@', '#SNOWDROP@', '#PHYRE@', '#SUMO@', '#NVNSH@', '#FABLFS@', '#NRO@')   # sources whose every shader is a program of one stage: GLSLC outputs, Unreal's shader records, MT Framework's shader package (BNSH variations, Unity programs, MSHD and SDF pair theirs);
 # Unreal Engine 3's shader caches (ue3_shaders, '#UE3@'); MonoGame's effects, whose passes may name no vertex shader and keep the one bound (Celeste: 10 of its 13 effects draw through SpriteBatch's vertex shader, which is in main); Next Level Games'
 # archives (Luigi's Mansion 3 makes 5,317 programs of one stage each at boot); PlatinumGames' shader objects (Bayonetta 3: one stage each, pg_shader); control sections loose in main
 # (Advance Wars 1+2: Re-Boot Camp's Bink shaders, raw_shaders), which no file pairs; YEBIS's effect file (tfxo_shaders); and Sumo's Ninty_NX descriptors and NVNsh records, one stage
@@ -2832,7 +2867,7 @@ def scan_file_in(args):
         try: pairs = unity_shaders(d, '/' + rel, found, trees if not TREES else dict(TREES))
         except unityfs.NoTree: return rel, {}, set(), 'defer'
         return rel, uniq_keys(found), var_pairs(found) | {(a, b, 'prog') for a, b in pairs}, trees
-    elif b'BNSH\0\0\0\0' not in d and b'BAHS' not in d and d[:4] != b'MSHD' and d[:4] != b'NARC' and not (d[:4] == b'SARC' and b'Yaz0' in d) and b'\x91\x68\x86\x19' not in d and MGFX not in d and NEEDLE not in d and d[:8] != SUMO_MUX and SUMO_NX not in d and NVNSH not in d: return rel, {}, set(), {}   # a SARC may hold Yaz0 members, a NARC packed ones (cra.undo)
+    elif b'BNSH\0\0\0\0' not in d and b'BAHS' not in d and d[:4] != b'MSHD' and d[:4] != b'NARC' and not (d[:4] == b'SARC' and b'Yaz0' in d) and b'\x91\x68\x86\x19' not in d and MGFX not in d and NEEDLE not in d and d[:8] != SUMO_MUX and SUMO_NX not in d and NVNSH not in d and d[:8] != FABLFS_MAGIC and d[:4] != NRO_MAGIC and d[0x10:0x14] != NRO_MAGIC: return rel, {}, set(), {}   # a SARC may hold Yaz0 members, a NARC packed ones (cra.undo)
     else:
         scan_blob(d, '/' + rel, found)
         # whole GLSLC outputs in a file no other reader takes (FINAL FANTASY TACTICS - The Ivalice Chronicles: its engine's technique files, resources_nx/…/shader/*.tec, 261 outputs beside

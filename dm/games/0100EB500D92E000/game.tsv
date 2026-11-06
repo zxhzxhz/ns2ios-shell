@@ -1,0 +1,35 @@
+# Provisional game profile (written on Windows from dm/games/profile_guess.py, not checked by hand)
+# GROOVE COASTER WAI WAI PARTY!!!!, SDK 9, from I:\APP\ns2ios-shell\workingdir\gc_survey\extract
+
+# ---- Identity ----
+title_id	0100EB500D92E000
+program_id	0100EB500D92E000
+
+# ---- App ----
+name	GROOVE COASTER WAI WAI PARTY!!!!
+ipa	GROOVECOASTERWAIWAIPARTY.ipa
+app_category	public.app-category.games
+
+# ---- Versions ----
+build	v1441792	1.0.22	main=cfb78c2488245ff68dd4f34c498d708a	subsdk0=f92af17ed915be68a70ed0b46ed256cd	sdk=290c9a04234847a176aa1c375c16af99
+package	v1441792
+shader_versions	v1441792
+
+# ---- Files ----
+# every module main imports from
+modules	main subsdk0 sdk
+romfs_marker	ui/ReplaceTexture.arc
+zip_store	.arc:.bffnt:.dat:.mtx:.otf:.metallib
+
+# ---- Memory ----
+# main sets a heap of at most the pool − 64 MB: a 3328 MB heap region
+mem_reserve	0x100000000
+mem_alias	0x10000000
+mem_stack	0x10000000
+app_pool	0xCD500000
+# the NPDM declares 0 MB of system resource: IsVirtualAddressMemoryEnabled is false, as on Horizon (Big Brain Academy: Brain vs. Brain sets a heap only then)
+sys_resource	0x0
+
+# ---- Shader split ----
+shader_groups	/model/=model /2d_boost/=2dboost /stage/=stage /sound/=sound /skin/=skin /config/=config /shaders/=shaders /effect/=effect /boot/=boot /font/=font /mission/=mission /ui/=ui
+shader_note	GROOVE COASTER WAI WAI PARTY!!!! shaders (provisional profile)

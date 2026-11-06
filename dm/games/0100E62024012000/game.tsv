@@ -1,0 +1,36 @@
+# Provisional game profile (written on Windows from dm/games/profile_guess.py, not checked by hand)
+# Zumba - Galactic Marble Blast, SDK 20, from I:\APP\ns2ios-shell\workingdir\0100E62024012000_survey\extract
+
+# ---- Identity ----
+title_id	0100E62024012000
+program_id	0100E62024012000
+
+# ---- App ----
+name	Zumba - Galactic Marble Blast
+ipa	ZumbaGalacticMarbleBlast.ipa
+app_category	public.app-category.games
+
+# ---- Versions ----
+build	v0	1.0	main=6863578dde82d1cb0461c4438601738c	subsdk0=3904a8dee6801472d56bd4921378df27	sdk=190030518b5d64e5d87b84bc54661af9
+package	v0
+shader_versions	v0
+
+# ---- Files ----
+# every module main imports from
+modules	main subsdk0 sdk
+romfs_marker	Data/resources.assets.resS
+zip_store	.assets:.dat:.resource:.ress:.metallib
+
+# ---- Memory ----
+# Unity 6000.1.13f1 IL2CPP (the shaders are in Data/*.assets, SHADER_6000_0 class 48): the 7 GB alias layout (README rule 7)
+# profile_guess's 4.375 GB ran out for every Unity game so far (Citizen Sleeper, Kizuna, Sixtar Gate)
+mem_reserve	0x210000000
+mem_alias	0x1C0000000
+mem_stack	0x10000000
+app_pool	0xCD500000
+# the NPDM declares 16 MB of system resource
+sys_resource	0x1000000
+
+# ---- Shader split ----
+shader_groups	/Data/=data
+shader_note	Zumba - Galactic Marble Blast shaders (provisional profile)
