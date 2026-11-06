@@ -476,6 +476,12 @@ static Result err_res(const char *op, const char *path) {
 #define RW() if (ro) { LOG("fs write to a read-only mount: %s", hp); return RES_FAIL; }
 // Create directory / create file: if the target exists, answer "already exists" as a writable mount would -- that is the only failure the game understands (the original save storage never fails to write); with a generic failure it carries on with a null handle
 #define RW_CREATE() if (ro) { if (!access(hp, F_OK)) return RES_PATH_EXISTS; LOG("fs write to a read-only mount: %s", hp); return RES_FAIL; }
+// DM_FSWRITE=1 logs every call that changes a writable mount (create, delete, rename, directory work). A successful delete
+// leaves no line anywhere else, and a game that abandons a save deletes what it wrote instead of saying so (Whisper of the
+// House: the slot directory and its ConfigSaveData appear and are gone again within one save attempt). Off by default --
+// a save-heavy game makes hundreds of these calls.
+static int fsw_on(void) { static int v = -1; if (v < 0) v = getenv("DM_FSWRITE") != NULL; return v; }
+#define FSW(op, path) do { if (fsw_on()) LOG("fs %s: %s", op, path); } while (0)
 
 // ---------- Mount ----------
 HLE_FORCE("_ZN2nn2fs22QueryMountRomCacheSizeEPm", "fsp-srv; rom reads the host directory directly, the cache gets only the minimum size", Result, h_fs_QueryRomCache, size_t *out) { *out = 0x1000; return RES_OK; }
@@ -602,6 +608,43 @@ HLE_FORCE("_ZN2nn2fs26GetUtf16EntryNameLengthMaxEPbPmPKc", "fsp-srv; host mounts
 HLE_FORCE("_ZN2nn2fs21MountTemporaryStorageEPKc", "fsp-srv; temporary storage → host directory", Result, h_fs_MountTemp, const char *name) {
     char b[1024]; return mount(name, envdir("DM_TEMP", "run/platform/temp", b, sizeof b), 0);
 }
+// RAM disk (nn::fs::MountRamDisk(name, buffer, size), SDK 9+): a volatile scratch filesystem; on the console the game hands it
+// a buffer it then never touches, because every access goes through nn::fs. The host backs the name with a directory under the
+// temporary storage instead (DM_RAM overrides) and leaves the buffer unused, so nothing here can run out of memory.
+// Whisper of the House stages its player save at ram:/TempPlayerSave and gives up on the save when that device is missing: the
+// slot's ConfigSaveData is written and committed, the payload step then writes nothing, the slot directory is deleted again and
+// SaveConfigDict keeps the slot with an empty saveFileNames list (four slots that restore nothing). It imports MountRamDisk but
+// never calls it, so the device is mounted here for a game that only names it -- the same "ask main's imports" rule the device
+// save data uses above.
+// The backing directory has to exist *before* the mount: every path under ram: is resolved by walking its components, and a
+// missing root answers "not found" for each of them (the first build put the device at $DM_ROOT/run/platform/ram, whose
+// parent does not exist on iOS, and the game's mkdir ram:/TempPlayerSave failed as fast as it was retried). So it lives
+// beside the temporary storage, which the front end creates at boot, and the chain is made here anyway.
+static const char *ram_dir(char *b, size_t n) {
+    const char *r = getenv("DM_RAM");
+    if (r && *r) { strlcpy(b, r, n); return b; }
+    char t[1024];
+    snprintf(b, n, "%s/ram", envdir("DM_TEMP", "run/platform/temp", t, sizeof t));
+    return b;
+}
+static void mkdir_parents(char *p) {
+    if (p[0] != '/') { mkdir(p, 0755); return; }
+    for (char *q = p + 1; *q; q++) if (*q == '/') { *q = 0; mkdir(p, 0755); *q = '/'; }
+    mkdir(p, 0755);
+}
+static Result ram_mount(const char *name) {
+    char b[1024]; ram_dir(b, sizeof b); mkdir_parents(b);
+    return mount(name, b, 0);
+}
+HLE_FORCE("_ZN2nn2fs12MountRamDiskEPKcPvm", "fsp-srv; RAM disk → host directory under the temporary storage (the guest's buffer is unused)", Result, h_fs_MountRamDisk, const char *name, void *buf, size_t sz) {
+    (void)buf; char b[1024];
+    LOG("fs RAM disk %s: %zu bytes asked for, backed by %s (volatile, the buffer stays unused)", name, sz, ram_dir(b, sizeof b));
+    return ram_mount(name);
+}
+static void ram_disk_ensure(void) {
+    if (!dm_main_imports("_ZN2nn2fs12MountRamDiskEPKcPvm")) return;
+    ram_mount("ram");
+}
 // Cache storage (Tears of the Kingdom; its first list call opened fsp-srv and aborted in sm::Initialize): storage <index> is the host folder <temporary storage>_cache<index>,
 // created when it is created or mounted. The list reports none (a fresh console), so the game creates its storage at every boot; creating an existing one succeeds
 static const char *cache_dir(int index, char *b, size_t n) { char t[1024]; snprintf(b, n, "%s_cache%d", envdir("DM_TEMP", "run/platform/temp", t, sizeof t), index); return b; }
@@ -652,6 +695,7 @@ HLE_FORCE("_ZN2nn2fs13MountSaveDataEPKcRKNS_7account3UidE", "fsp-srv; save data 
     if (!d) die("DM_SAVE is not set: point it at a writable copy of a save directory");
     char dd[1024]; strlcpy(dd, d, sizeof dd); size_t L = strlen(dd); while (L > 1 && dd[L - 1] == '/') dd[--L] = 0;   // strip trailing slashes (.work / .new are appended at the same level)
     save_sync_mount(dd, DM_GAME_ID);   // DM_SAVE_SYNC: the cloud's save comes in before the work directory is cloned from the committed one (save_sync.h)
+    ram_disk_ensure();   // a game that names ram: without ever mounting it gets the device before it writes its first save
     return mount_ex(name, dd, 0, 1);
 }
 // Device save data: one save for the console instead of one per user. Animal Crossing: New Horizons keeps its island there (3.0.3's main mounts no account save data at all); the host
@@ -899,7 +943,7 @@ HLE_FORCE("_ZN2nn2fs9CloseFileENS0_10FileHandleE", "fsp-srv → close(2)", void,
 HLE_FORCE("_ZN2nn2fs15GetFileOpenModeENS0_10FileHandleE", "fsp-srv; the open mode is recorded by the host", int, h_fs_GetFileOpenMode, uint64_t h) { h = FH_IN(h); return IMG_H(h) ? MODE_READ : g_fmode[(int)h & 0xffff]; }
 
 // ---------- Path operations ----------
-HLE_FORCE("_ZN2nn2fs10CreateFileEPKcl", "fsp-srv → open(O_CREAT|O_EXCL)+ftruncate", Result, h_fs_CreateFile, const char *path, int64_t sz) { dm_thread_service_request();
+HLE_FORCE("_ZN2nn2fs10CreateFileEPKcl", "fsp-srv → open(O_CREAT|O_EXCL)+ftruncate", Result, h_fs_CreateFile, const char *path, int64_t sz) { dm_thread_service_request(); FSW("create", path);
     int mi; int64_t k; if (img_path(path, &mi, &k)) return k >= 0 ? RES_PATH_EXISTS : RES_FAIL;   // as RW_CREATE answers on a read-only folder
     HP_EX(path, 1); RW_CREATE();
     int fd = open(hp, O_WRONLY | O_CREAT | O_EXCL, 0644);
@@ -909,8 +953,9 @@ HLE_FORCE("_ZN2nn2fs10CreateFileEPKcl", "fsp-srv → open(O_CREAT|O_EXCL)+ftrunc
     if (rc) unlink(hp);
     errno = e; return rc ? err_res("create", hp) : RES_OK;
 }
-HLE_FORCE("_ZN2nn2fs10DeleteFileEPKc", "fsp-srv → unlink(2)", Result, h_fs_DeleteFile, const char *path) { dm_thread_service_request(); HP(path); RW(); return unlink(hp) ? err_res("unlink", hp) : RES_OK; }
+HLE_FORCE("_ZN2nn2fs10DeleteFileEPKc", "fsp-srv → unlink(2)", Result, h_fs_DeleteFile, const char *path) { dm_thread_service_request(); FSW("unlink", path); HP(path); RW(); return unlink(hp) ? err_res("unlink", hp) : RES_OK; }
 HLE_FORCE("_ZN2nn2fs15CreateDirectoryEPKc", "fsp-srv → mkdir(2)", Result, h_fs_CreateDirectory, const char *path) { dm_thread_service_request();
+    FSW("mkdir", path);
     int mi; int64_t k; if (img_path(path, &mi, &k)) return k >= 0 ? RES_PATH_EXISTS : RES_FAIL;
     HP_EX(path, 1); RW_CREATE();
     if (mkdir(hp, 0755)) return err_res("mkdir", hp);
@@ -934,11 +979,11 @@ static int rm_tree(const char *p) {
     closedir(d);
     return rc | rmdir(p);
 }
-HLE_FORCE("_ZN2nn2fs26DeleteDirectoryRecursivelyEPKc", "fsp-srv → recursive delete (only inside writable mounts)", Result, h_fs_DeleteDirRec, const char *path) { dm_thread_service_request();
+HLE_FORCE("_ZN2nn2fs26DeleteDirectoryRecursivelyEPKc", "fsp-srv → recursive delete (only inside writable mounts)", Result, h_fs_DeleteDirRec, const char *path) { dm_thread_service_request(); FSW("rmtree", path);
     HP(path); RW(); return rm_tree(hp) ? err_res("rmtree", hp) : RES_OK;
 }
 // empty a directory and keep the directory itself (13 Sentinels)
-HLE_FORCE("_ZN2nn2fs25CleanDirectoryRecursivelyEPKc", "fsp-srv → recursively deletes the directory's contents and keeps the directory (only inside writable mounts)", Result, h_fs_CleanDirRec, const char *path) { dm_thread_service_request();
+HLE_FORCE("_ZN2nn2fs25CleanDirectoryRecursivelyEPKc", "fsp-srv → recursively deletes the directory's contents and keeps the directory (only inside writable mounts)", Result, h_fs_CleanDirRec, const char *path) { dm_thread_service_request(); FSW("cleandir", path);
     HP(path); RW();
     DIR *d = opendir(hp); if (!d) return err_res("cleandir", hp);
     struct dirent *e; char c[1024]; int rc = 0;
@@ -959,10 +1004,11 @@ HLE_FORCE("_ZN2nn2fs29EnableIndividualFileDataCacheEPKcPvm", "fsp-srv read cache
 HLE_FORCE("_ZN2nn2fs30DisableIndividualFileDataCacheEPKc", "fsp-srv read cache for one file; unused by the host", void, h_fs_DisableFileCache, const char *path) { (void)path; }
 HLE_FORCE("_ZN2nn2fs26DisableGlobalFileDataCacheEv", "fsp-srv global read cache; unused by the host (DRAGON QUEST XI S's nninitStartup turns it off again after its start-up thread)", void, h_fs_DisableGlobalCache, void) {}
 // SDK 11 (Metroid Dread): delete an empty directory
-HLE_FORCE("_ZN2nn2fs15DeleteDirectoryEPKc", "fsp-srv → rmdir(2) (the directory must be empty)", Result, h_fs_DeleteDir, const char *path) { dm_thread_service_request();
+HLE_FORCE("_ZN2nn2fs15DeleteDirectoryEPKc", "fsp-srv → rmdir(2) (the directory must be empty)", Result, h_fs_DeleteDir, const char *path) { dm_thread_service_request(); FSW("rmdir", path);
     HP(path); RW(); return rmdir(hp) ? err_res("rmdir", hp) : RES_OK;
 }
 static Result rename_entry(const char *from, const char *to) {
+    if (fsw_on()) LOG("fs rename: %s → %s", from, to);
     HP(from); RW(); char hp2[1024];
     if (!host_path_ex(to, hp2, sizeof hp2, NULL, 1)) return err_res("rename path", to);
     if (!access(hp2, F_OK)) return RES_PATH_EXISTS;

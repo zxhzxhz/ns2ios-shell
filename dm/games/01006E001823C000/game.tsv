@@ -1,0 +1,38 @@
+# Provisional game profile (written on Windows from dm/games/profile_guess.py, not checked by hand)
+# Sonic Racing CrossWorlds, SDK 18, from ..\workingdir\01006E001823C000_survey
+
+# ---- Identity ----
+title_id	01006E001823C000
+program_id	01006E001823C000
+
+# ---- App ----
+name	Sonic Racing CrossWorlds
+ipa	SonicRacingCrossWorlds.ipa
+app_category	public.app-category.games
+
+# ---- Versions ----
+build	v720896	1.43	main=cf6a61882f2ade943495cf2918a73e07	subsdk0=98be7d979f987d444eed189dee9c3b4e	sdk=ad9ee4518b1d8ca811fbdf35fc4f26d5
+package	v720896
+shader_versions	v720896
+
+# ---- Files ----
+# every module main imports from
+modules	main subsdk0 sdk
+romfs_marker	UNION/Content/Paks/pakchunk0-Switch.pak
+zip_store	.nro:.pak:.txt:.metallib
+
+# ---- Memory ----
+# iPhone layout of Octopath Traveler 0 (0010...): 3.75 GB guest block, alias = node area + engine region + 256 MB.
+# profile_guess guessed the Mac bring-up layout (62 GB reserve / 64 GB alias): the rewriter gives the engine region
+# what the alias region has room for (dm/tools/ue_region.py), so the iPhone takes a smaller guest block.
+mem_reserve	0xF0000000
+mem_alias	0xC8000000
+mem_stack	0x10000000
+app_pool	0xCD500000
+# the NPDM declares 20 MB of system resource
+sys_resource	0x1400000
+
+# ---- Shader split ----
+# the decoded shader code archives: the engine's global shaders and the game's material shaders
+shader_groups	ShaderArchive-Global-=global ShaderArchive-=game
+shader_note	Sonic Racing CrossWorlds shaders (provisional profile)

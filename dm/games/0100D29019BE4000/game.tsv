@@ -1,0 +1,36 @@
+# Provisional game profile (written on Windows from dm/games/profile_guess.py, not checked by hand)
+# Sixtar Gate: STARTRAIL, SDK 18, from I:\APP\ns2ios-shell\workingdir\0100D29019BE4000_survey
+
+# ---- Identity ----
+title_id	0100D29019BE4000
+program_id	0100D29019BE4000
+
+# ---- App ----
+name	Sixtar Gate: STARTRAIL
+ipa	SixtarGateSTARTRAIL.ipa
+app_category	public.app-category.games
+
+# ---- Versions ----
+build	v1179648	1.0.018	main=16c15db6215da063492a0628e07956e8	subsdk0=ca1378cdd05a63438ef12ee7fbd5ca9c	sdk=f118ae1c2e7728471aaf1a0d58484968
+package	v1179648
+shader_versions	v1179648
+
+# ---- Files ----
+# every module main imports from
+modules	main subsdk0 sdk
+romfs_marker	Data/resources.assets.resS
+zip_store	.assets:.dat:.resource:.ress:.metallib
+
+# ---- Memory ----
+# the NPDM declares 16 MB of system resource (virtual address memory) and main sets a heap: a 5 GB block with a large alias region; the heap check sizes the heap region from the heap the game asks for
+# calibrated on the device: profile_guess's 4.375 GB alias ran out of address space at frame 16 (mapped up to +4.26 GB of 4.38 GB, SIGSEGV in Unity's TLSF allocator) -- 7 GB, as with Citizen Sleeper (PITFALLS 40)
+mem_reserve	0x210000000
+mem_alias	0x1C0000000
+mem_stack	0x10000000
+app_pool	0xCD500000
+# the NPDM declares 16 MB of system resource
+sys_resource	0x1000000
+
+# ---- Shader split ----
+shader_groups	/Data/=data
+shader_note	Sixtar Gate: STARTRAIL shaders (provisional profile)

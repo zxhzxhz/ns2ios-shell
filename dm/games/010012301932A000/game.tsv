@@ -1,0 +1,36 @@
+# Provisional game profile (written on Windows from dm/games/profile_guess.py, not checked by hand)
+# Melatonin, SDK 14, from I:\APP\ns2ios-shell\workingdir\010012301932A000_pack\extract\v524288
+
+# ---- Identity ----
+title_id	010012301932A000
+program_id	010012301932A000
+
+# ---- App ----
+name	Melatonin
+ipa	Melatonin.ipa
+app_category	public.app-category.games
+
+# ---- Versions ----
+build	v524288	230623	main=5cc56690a4d95c1afc149a00b8505771	subsdk0=75c83c09e25f9a4e60bd960815722e86	sdk=2587a39ac2547a780ec0e4b77e22afab
+package	v524288
+shader_versions	v524288
+
+# ---- Files ----
+# every module main imports from
+modules	main subsdk0 sdk
+romfs_marker	Data/sharedassets4.assets.resS
+zip_store	.assets:.dat:.resource:.ress:.metallib
+
+# ---- Memory ----
+# Unity (2021.3.8f1): the big layout of README rule 7 -- profile_guess's 4.375 GB alias region is what ran dry on every
+# Unity game here so far (deep sea dreamer, Kizuna, Sixtar Gate); lower it only after a device log gives the real high water mark
+mem_reserve	0x210000000
+mem_alias	0x1C0000000
+mem_stack	0x10000000
+app_pool	0xCD500000
+# the NPDM declares 16 MB of system resource
+sys_resource	0x1000000
+
+# ---- Shader split ----
+shader_groups	/=romfs
+shader_note	Melatonin shaders (provisional profile)

@@ -1,0 +1,35 @@
+# Provisional game profile (written on Windows from dm/games/profile_guess.py, not checked by hand)
+# Clubhouse Games: 51 Worldwide Classics, SDK 9, from I:\APP\ns2ios-shell\workingdir\010047700D540000_survey
+
+# ---- Identity ----
+title_id	010047700D540000
+program_id	010047700D540000
+
+# ---- App ----
+name	Clubhouse Games: 51 Worldwide Classics
+ipa	ClubhouseGames51WorldwideClassics.ipa
+app_category	public.app-category.games
+
+# ---- Versions ----
+build	v262144	1.1.3	main=fad4615a54dcc997b07a7be8588505dd	subsdk0=0e0956c8d8d7489bf178e9efd9055a3b	subsdk1=5a7ada8dd7447c10aa244944f64d0aff	sdk=ad3fdfbd62a5f4b082d385ffe420d440
+package	v262144
+shader_versions	v262144
+
+# ---- Files ----
+# every module main imports from
+modules	main subsdk0 subsdk1 sdk
+romfs_marker	Archive/system.nx.bea
+zip_store	.bea:.webm:.metallib
+
+# ---- Memory ----
+# main sets a heap of at most the pool − 64 MB: a 3328 MB heap region
+mem_reserve	0x100000000
+mem_alias	0x10000000
+mem_stack	0x10000000
+app_pool	0xCD500000
+# the NPDM declares 0 MB of system resource: IsVirtualAddressMemoryEnabled is false, as on Horizon (Big Brain Academy: Brain vs. Brain sets a heap only then)
+sys_resource	0x0
+
+# ---- Shader split ----
+shader_groups	/stream/=stream /Archive/=archive /movie/=movie /nro/=nro /.nrr/=nrr
+shader_note	Clubhouse Games: 51 Worldwide Classics shaders (provisional profile)

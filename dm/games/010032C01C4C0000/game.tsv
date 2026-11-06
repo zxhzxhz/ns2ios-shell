@@ -1,0 +1,35 @@
+# Provisional game profile (written on Windows from dm/games/profile_guess.py, not checked by hand)
+# Natsuno-Kanata: Beyond Summer, SDK 19, from ..\workingdir\010032C01C4C0000_pack\extract\v131072
+
+# ---- Identity ----
+title_id	010032C01C4C0000
+program_id	010032C01C4C0000
+
+# ---- App ----
+name	Natsuno-Kanata: Beyond Summer
+ipa	NatsunoKanataBeyondSummer.ipa
+app_category	public.app-category.games
+
+# ---- Versions ----
+build	v131072	1.0.6	main=8b88074eeb3fb90e59cbfdd587cca6d3	subsdk0=e0ee365be8fb7ba6d2071082b5417b50	sdk=191086db0c8bb8477a320ccd7942a254
+package	v131072
+shader_versions	v131072
+
+# ---- Files ----
+# every module main imports from
+modules	main subsdk0 sdk
+romfs_marker	Data\resources.assets.resS
+zip_store	.assets:.bundle:.dat:.resource:.ress:.metallib
+
+# ---- Memory ----
+# Unity's TLSF heap needs address space, not memory (README rule 7): 7 GB alias / 8.25 GB reserve, as every Unity title here
+mem_reserve	0x210000000
+mem_alias	0x1C0000000
+mem_stack	0x10000000
+app_pool	0xCD500000
+# the NPDM declares 16 MB of system resource
+sys_resource	0x1000000
+
+# ---- Shader split ----
+shader_groups	/Data/=data
+shader_note	Natsuno-Kanata: Beyond Summer shaders (provisional profile)

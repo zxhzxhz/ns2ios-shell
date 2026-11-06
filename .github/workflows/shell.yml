@@ -19,7 +19,7 @@ on:
         description: 'Tree to build from (upstream = latest nxnative + this fork''s files, fork = this snapshot)'
         type: choice
         options: [upstream, fork]
-        default: upstream
+        default: fork
       publish:
         description: 'Publish a release (leave off to only build the artifacts)'
         type: boolean
@@ -210,7 +210,7 @@ jobs:
     # xcode-27, not macos-26: upstream's iOS code now uses an iOS 27 API (CMMotionManager.deviceMotionBody, cca3333), and
     # @available(iOS 27, *) guards the call, not the symbol -- with the macos-26 image's iOS 26.5 SDK the build stops at
     # "property 'deviceMotionBody' not found on object of type 'CMMotionManager *'" and nothing can be published.
-    runs-on: xcode-27
+    runs-on: macos-26        # this private fork builds on a hosted image (the upstream one is a self-hosted xcode-27); DmGamepad.m carries the iOS 27 API shim that makes that possible
     timeout-minutes: 60
     outputs:
       version: ${{ steps.tree.outputs.version }}
@@ -227,7 +227,7 @@ jobs:
       - name: Assemble the source tree
         id: tree
         env:
-          REQUESTED: ${{ inputs.source || 'upstream' }}   # upstream by default: this repository only carries the diff
+          REQUESTED: ${{ inputs.source || 'fork' }}   # fork by default: this repository carries the host change itself, so an unqualified run builds what is here
         run: |
           # keep this step's output too: a failure here happens before the build log exists
           exec > >(tee "$RUNNER_TEMP/shell.out") 2>&1

@@ -17,6 +17,23 @@
 #if TARGET_OS_IPHONE
 #include <os/proc.h>   // os_proc_available_memory: for the memory readout line
 #endif
+// iOS 27 / macOS 27 added the content rectangle offsets to MTL4FXTemporalScaler. A build host whose SDK predates them has
+// no declaration for the property even though the system the app runs on does, and the @available(iOS 27, macOS 27, *)
+// path below then fails to compile ("property 'colorContentOffsetX' not found on object of type id<MTL4FXTemporalScaler>").
+// This private build declares them so the same source compiles against an older SDK; the @available guard is what keeps
+// them off a system that lacks the selectors.
+// The scaler is handled as id<MTL4FXTemporalScaler>, and a category on NSObject is not in that protocol's method list,
+// so the offsets get a protocol of their own and the object is cast to it where they are set.
+@protocol DMTemporalScalerOffsets <NSObject>
+@property (nonatomic, assign) NSUInteger colorContentOffsetX;
+@property (nonatomic, assign) NSUInteger colorContentOffsetY;
+@property (nonatomic, assign) NSUInteger depthContentOffsetX;
+@property (nonatomic, assign) NSUInteger depthContentOffsetY;
+@property (nonatomic, assign) NSUInteger motionContentOffsetX;
+@property (nonatomic, assign) NSUInteger motionContentOffsetY;
+@property (nonatomic, assign) NSUInteger outputOffsetX;
+@property (nonatomic, assign) NSUInteger outputOffsetY;
+@end
 #include "nvn_mtl.h"
 #include "nvn_obj.h"
 #include "../tex/nvn_fmt_mtl.h"
@@ -2055,8 +2072,15 @@ static void pkg_edges_take(NvPkg *pk, const tex_t *t) {   // right after an uplo
     // A write after the upload's stamp may have reached the copy but not the upload: then there is no copy to trust, and the next write re-uploads as before
     if (nvn_dirty_since_span(pk->span, t->mem, t->L.size, pk->stamp)) for (int i = 0; i < 2; i++) { free(pk->edge[i]); pk->edge[i] = NULL; pk->edge_n[i] = 0; }
 }
-static int pkg_edges_clean(NvPkg *pk, const tex_t *t) {   // the covered pages were written since the upload: 1 = only edge pages, and the texture's bytes there are as uploaded
-    if (!pk->edge_n[0] && !pk->edge_n[1]) return 0;
+// DM_NVN_PKG_REUPLOAD=1 (off by default): upload a packaged texture again on every bind even when its pages look unchanged — for a game whose
+// texels are written after the texture's first use into pages this tracker does not see, which leaves the GPU copy stale for the rest of the run
+// (ほの暮しの庭: a translucent magenta band on the title screen, a different shape every launch, while the loading and logo screens are clean).
+// Every bind then copies the storage again (an 8 MB texture at 60 Hz is 480 MB/s), so only such a game's profile turns it on.
+static int pkg_reupload_on(void) { static int v = -1;
+    if (v < 0) { const char *e = getenv("DM_NVN_PKG_REUPLOAD"); v = e && atoi(e) != 0;
+                 if (v) MLOG("DM_NVN_PKG_REUPLOAD: packaged textures are uploaded again on every bind (workaround)"); }
+    return v; }
+static int pkg_edges_clean(NvPkg *pk, const tex_t *t) {   // the covered pages were written since the upload: 1 = only edge pages, and the texture's bytes there are as uploaded    if (!pk->edge_n[0] && !pk->edge_n[1]) return 0;
     uintptr_t r[2][2], ia, ie; pkg_edge_ranges(t, r, &ia, &ie);
     uint64_t st = nvn_dirty_now(); nvn_dirty_protect(t->mem, t->L.size);   // take the stamp, protect, then read (as pkg_upload): a later write is seen at the next check
     if (ie > ia && nvn_dirty_since_span(pk->span, (const void *)ia, ie - ia, pk->stamp)) return 0;
@@ -3338,7 +3362,7 @@ static id<MTLTexture> tex_mtl_(const tex_t *ct) {
             if (g_nabsp && pkg_absorb_waits(t->serial)) return pk->view ? pk->view : pk->tex;
             uint64_t now = nvn_dirty_now();
             int tracked = pk->span != NULL;   // kept from the upload: a texture's pool stays registered while the texture lives
-            int clean = tracked && (now == pk->seen || !nvn_dirty_since_span(pk->span, t->mem, t->L.size, pk->stamp));
+            int clean = tracked && (now == pk->seen || !nvn_dirty_since_span(pk->span, t->mem, t->L.size, pk->stamp)) && !pkg_reupload_on();
             // Checked already in this submission: seen and vseen stay those of that check, so a write or a mapping another thread makes during the replay is found at the next submission's
             if (pk->sparse && sparse_checked(pk)) { clean = 1; now = pk->seen; }
             else if (pk->sparse) { uint64_t g = nvn_sparse_gen(); clean = (now == pk->seen && g == pk->vseen) || !nvn_sparse_since(t->pool, (uint64_t)(uintptr_t)t->mem, t->L.size, pk->vgen, pk->stamp); pk->vseen = g; pk->sub = g_sub_serial; }
@@ -3349,7 +3373,7 @@ static id<MTLTexture> tex_mtl_(const tex_t *ct) {
                     MLOG("[RED] dirty-page miss: texture ser=%llu pool content changed but was not detected", t->serial);
                 return pk->view ? pk->view : pk->tex;
             }
-            if (!pk->sparse && pkg_edges_clean(pk, t)) return pk->view ? pk->view : pk->tex;   // only the pages it shares with other data were written
+            if (!pk->sparse && !pkg_reupload_on() && pkg_edges_clean(pk, t)) return pk->view ? pk->view : pk->tex;   // only the pages it shares with other data were written
             // Pool content changed (streamed assets written into the same storage, a movie frame): switch to another texture, as in-flight draws still read the old one. That is the spare
             // when the GPU is done with it (see NvPkg), else a new one; the old one becomes the spare (pkg_upload_ made nt resident)
             id<MTLTexture> reuse = nil;
@@ -11097,6 +11121,16 @@ static void draw_(const p_draw *dw, const p_draw_idx *di) {
     if (!g_defer_replaying && !g_geo_program) {
         if (g_defer.active && g_defer.in_p && !g_defer.at_q) { if (defer_take(dw, di)) return; }
     }
+    // Diagnostic DM_DRAWLOG=1 (off by default): one line per draw with the program's vertex and fragment shader keys, so an object that draws
+    // wrong can be matched to its shader without guessing keys (a key can otherwise only be tested one at a time with DM_NVN_HILITE). Both
+    // switches come from the environment, which on iOS is dm/env.txt (a Documents/env.txt beside the save data overrides it): write the line
+    // there and relaunch, no diagnostic is compiled in. DM_DRAWLOG_COUNT caps the lines (default 300).
+    { static int dl = -1, dn, cap = 300;
+      if (dl < 0) { const char *e = getenv("DM_DRAWLOG"); dl = e && atoi(e) != 0;
+                    const char *c = getenv("DM_DRAWLOG_COUNT"); if (c && atoi(c) > 0) cap = atoi(c);
+                    if (dl) MLOG("DM_DRAWLOG: logging the first %d draws (vs / ps keys)", cap); }
+      if (dl && dn < cap) { dn++; MLOG("[draw] f%llu p%llu vs=%s ps=%s", (unsigned long long)atomic_load(&g_cur_frame),
+          (unsigned long long)g_stat_pass, pr->sh[0] ? pr->sh[0]->key : "-", pr->sh[1] ? pr->sh[1]->key : "-"); } }
     // Draws that cannot draw anything (both faces culled, empty scissor) return before the render pass is opened: otherwise the render pass is already open and on TBDR the whole attachment is loaded and stored for nothing
     // (Mac character select page: 3 render passes are opened only because of such draws, all loaded, zero draws)
     // Diagnostic switch for measuring an upper bound DM_NVN_SKIP_FS=<fragment key>[,<fragment key>...] (none by default): drops all draws of these fragment shaders (the picture will be wrong; only used in real-device ABA to measure "how much GPU time this class of draws is worth in total")
@@ -12091,10 +12125,11 @@ static void dlss_eval(const p_dlss *c) {
         sc.colorTexture = col; sc.depthTexture = dep; sc.motionTexture = mot; sc.outputTexture = out; sc.exposureTexture = expo;
         sc.inputContentWidth = iw; sc.inputContentHeight = ih;
         if (@available(macOS 27.0, iOS 27.0, *)) {   // the rectangles' corners: all at the origin on the game seen, so an older system loses nothing there
-            sc.colorContentOffsetX = (NSUInteger)a.base[DLSS_COLOR][0]; sc.colorContentOffsetY = (NSUInteger)a.base[DLSS_COLOR][1];
-            sc.depthContentOffsetX = (NSUInteger)a.base[DLSS_DEPTH][0]; sc.depthContentOffsetY = (NSUInteger)a.base[DLSS_DEPTH][1];
-            sc.motionContentOffsetX = (NSUInteger)a.base[DLSS_MOTION][0]; sc.motionContentOffsetY = (NSUInteger)a.base[DLSS_MOTION][1];
-            sc.outputOffsetX = (NSUInteger)a.base[DLSS_OUTPUT][0]; sc.outputOffsetY = (NSUInteger)a.base[DLSS_OUTPUT][1];
+            id<DMTemporalScalerOffsets> off = (id<DMTemporalScalerOffsets>)sc;   // the properties an SDK older than 27 has no declaration for (see the top of this file)
+            off.colorContentOffsetX = (NSUInteger)a.base[DLSS_COLOR][0]; off.colorContentOffsetY = (NSUInteger)a.base[DLSS_COLOR][1];
+            off.depthContentOffsetX = (NSUInteger)a.base[DLSS_DEPTH][0]; off.depthContentOffsetY = (NSUInteger)a.base[DLSS_DEPTH][1];
+            off.motionContentOffsetX = (NSUInteger)a.base[DLSS_MOTION][0]; off.motionContentOffsetY = (NSUInteger)a.base[DLSS_MOTION][1];
+            off.outputOffsetX = (NSUInteger)a.base[DLSS_OUTPUT][0]; off.outputOffsetY = (NSUInteger)a.base[DLSS_OUTPUT][1];
         }
         sc.motionVectorScaleX = a.mv[0]; sc.motionVectorScaleY = a.mv[1];
         sc.jitterOffsetX = a.jitter[0]; sc.jitterOffsetY = a.jitter[1];
@@ -12915,13 +12950,39 @@ static id<MTLTexture> present_raw_src(id<MTLTexture> src) {
     if (!v) { RED_ONCE(69, "present: cannot create a non-sRGB view of the sRGB swapchain texture (format %lu); presenting the decoded values", (unsigned long)src.pixelFormat); return src; }
     return v;
 }
-// The rectangle of the canvas (dw x dh) the picture (cw x ch) is drawn into: the picture's aspect ratio kept and centred, black bars in the rest (no stretching when the screen's ratio
-// differs from the game's, e.g. iPhone about 19.5:9 against the game's 16:9); when the ratios differ by under 1 % (the remainder from a game width that is a multiple of 8 in the
-// full-screen setup, e.g. 1952x900 against 2868x1320 differs by 0.17 %) the whole canvas, leaving no border of a few pixels
+// The rectangle of the canvas (dw x dh) the picture (cw x ch) is drawn into: the picture's aspect ratio kept and centred, black bars in the rest (no stretching when the screen's
+// ratio differs from the game's, e.g. iPhone about 19.5:9 against the game's 16:9); when the ratios differ by under DM_PRESENT_FIT_TOL (1 % by default: the remainder from a game width
+// that is a multiple of 8 in the full-screen setup, e.g. 1952x900 against 2868x1320 differs by 0.17 %) the whole canvas, leaving no border of a few pixels.
+//
+// The widescreen route (Hor+, docs/SHELL.md) has two independent sides, and both are needed: DmLayout.h's DM_VIEW_ASPECT makes the game's view the screen, and this one decides how
+// the game's picture lands on that view's canvas. So the ratio rule is a switch of its own here:
+//   DM_PRESENT_FIT=auto       (default) the tolerance rule above
+//   DM_PRESENT_FIT=full       always the whole canvas: the picture is stretched to it. For a game whose own docked resolution is wider than 16:9 but still off the phone's ratio by
+//                             more than the tolerance, and as a quick look at whether the geometry and the UI survive a wide picture before anyone patches the game's constants
+//   DM_PRESENT_FIT=letterbox  always the picture's own ratio, bars even where the difference is tiny (a control picture: a 16:9 game on the same phone)
+//   DM_PRESENT_FIT_TOL=<0..1> the tolerance the auto rule uses (0.01 = 1 %)
+static int g_pfit;              // 0 auto, 1 full, 2 letterbox
+static double g_pfit_tol = 0.01;
+static void present_fit_env(void) {
+    const char *e = getenv("DM_PRESENT_FIT");
+    if (e && *e) {
+        if (!strcmp(e, "full")) g_pfit = 1;
+        else if (!strcmp(e, "letterbox") || !strcmp(e, "fit")) g_pfit = 2;
+        else if (strcmp(e, "auto")) MLOG("[RED] DM_PRESENT_FIT=%s: auto, full or letterbox; keeping auto", e);
+    }
+    const char *t = getenv("DM_PRESENT_FIT_TOL");
+    if (t && *t) { double v = atof(t); if (v >= 0 && v <= 1) g_pfit_tol = v; else MLOG("[RED] DM_PRESENT_FIT_TOL=%s: 0 to 1; keeping %.3f", t, g_pfit_tol); }
+    if (g_pfit || g_pfit_tol != 0.01)
+        MLOG("present fit (DM_PRESENT_FIT): %s, tolerance %.3f", g_pfit == 1 ? "full, the picture stretched to the canvas" :
+             g_pfit == 2 ? "letterbox, the picture keeps its ratio" : "auto", g_pfit_tol);
+}
 static MTLViewport present_viewport(double cw, double ch, double dw, double dh) {
+    static pthread_once_t once = PTHREAD_ONCE_INIT;
+    pthread_once(&once, present_fit_env);   // a launch setting: read once, whatever thread presents first
     double s = fmin(dw / cw, dh / ch);
     MTLViewport vp = {floor((dw - cw * s) / 2), floor((dh - ch * s) / 2), round(cw * s), round(ch * s), 0, 1};
-    if (fabs((dw / dh) / (cw / ch) - 1) < 0.01) vp = (MTLViewport){0, 0, dw, dh, 0, 1};
+    double tol = g_pfit == 1 ? 1e9 : g_pfit == 2 ? -1.0 : g_pfit_tol;   // full: always the canvas; letterbox: never
+    if (fabs((dw / dh) / (cw / ch) - 1) < tol) vp = (MTLViewport){0, 0, dw, dh, 0, 1};
     return vp;
 }
 // The valid source rectangle of a present (x, y, width, height; the crop of nvnWindowSetCrop, zero = the whole texture); 0 when it lies outside the texture

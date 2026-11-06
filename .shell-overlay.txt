@@ -2,12 +2,6 @@
 #
 #   + path   a file this fork adds: copied onto the upstream tree as it is
 #   ~ path   a file this fork modifies: the matching .shell-patches/*.patch is applied to the upstream file
-#   - path   a file upstream has and this fork does not carry: CI must not copy it, and it must be gone here too
-#   ! path   outside what this fork maintains: the assembler does not use it, and a difference there is not drift
-#            (this fork's own docs and tools, upstream's Mac front end and dev scripts, the screenshots, upstream's CI)
-#
-# `scripts/check_tree.py` judges the whole tree against these lines and fails on anything undeclared: a change this fork
-# carries in a file no line names never reaches the shell, and nothing else would notice. CI runs it in Report drift.
 #
 # The patches are unified diffs against the base commit recorded in .shell-base.txt, so an upstream change elsewhere in one of
 # these files merges automatically instead of being lost by a whole-file copy. Only a change to the same lines makes `git apply`
@@ -20,6 +14,7 @@
 
 + dm/tools/guest_dylib.py                 # writes Frameworks/Guest.framework (pure standard library, any OS)
 + dm/gfx/tools/nometal_run.py             # runs the shader chain without Apple's compiler
++ dm/gfx/tools/metal_win_run.py          # Windows: the real Metal compiler behind xcrun (Apple Metal Developer Tools)
 + dm/gfx/tools/gl_prebuilt.py              # a LOVE game's GLSL from its own files: what DM_GL_CAPTURE would have written
 + dm/ios/Sources/CheatsView.swift          # the launcher's Cheats section: paste the codes, switch the entries on (no settings row: the list is not known until the text is parsed)
 + dm/ios/Sources/dm_shader_prep.m         # first-launch shader compilation page
@@ -34,7 +29,6 @@
 + dm/games/0000000000000000/game.tsv      # neutral placeholder profile the shell is compiled against
 + dm/games/0000000000000000/dmsh_chain.h
 + scripts/nxn_pack.py                     # packs the shell and the user's game files into an IPA, on any OS
-+ scripts/pack_nup.py                     # upstream's NUP reader (copied, unedited): nxn_pack.py writes a .nup out as a dump folder with it
 + README.md                                # this fork's route; upstream's own README is linked, not copied
 + README.zh-CN.md
 + docs/SHELL.md
@@ -55,6 +49,7 @@
 ~ dm/host/main.c                # profile game_args overridable at run time (DM_GAME_ARGS): the shell compiles the placeholder's empty string
 ~ dm/host/hle_cheats.c          # DM_CHEATS_ON carries 64 entries, not 16: the launcher's own list is the switch (no Mac panel)
 ~ dm/host/hle_fpslock.c         # profile ue_fps_cvar overridable at run time (DM_UE_FPS_CVAR): the shell compiles the placeholder's t.MaxFPS
+~ dm/host/hle_fs.c              # the RAM disk device (nn::fs::MountRamDisk, mounted for a game that only names ram:); DM_FSWRITE=1 traces the writes and deletes of a save
 ~ dm/gfx/nvn/nvn_mtl.m          # compile MSL source on the device; chain version read from the msl directory name; render_cond / tex_dyn_slots / tex_dirty_upload read from the environment
 ~ dm/gfx/nvn/hle_nvn.c          # profile tex_flush_upload / tex_dirty_upload / render_cond overridable at run time: the shell compiles the placeholder's 0
 ~ dm/gfx/gl/hle_gl.m            # a shader library the packing computer could not compile is compiled on the device instead
@@ -64,54 +59,15 @@
 ~ dm/games/game.py              # DM_GAMES_DIR split with os.pathsep: ':' cannot hold a Windows path
 ~ dm/tools/patch_nso.py            # the fork-based scan falls back to serial where there is no fork (Windows): the script works at import time, so spawn cannot stand in
 ~ dm/tools/nx_extract/Program.cs      # wraps the stacked storage in AlignedReadStorage
-~ dm/tools/romfs.py                    # _resolve splits on '/': on Windows abspath gives backslashes, so a RomFS image was never recognised and every read fell back to the file system
 
 ~ dm/gfx/tools/dmsh_chain.py    # SPIRV_CROSS: the release's .exe on Windows, not the in-repo macOS build
 ~ dm/gfx/tools/tool_lock.py     # tolerate a single-file translator build and a CRLF checkout
 ~ dm/gfx/tools/dmsh_mtlcache.py # ctypes.CDLL(None) is POSIX-only
 ~ dm/gfx/tools/dmsh_build.py    # atomic_json retries a Windows sharing violation: keys sharing a digest publish the same .json at once
-~ dm/tools/shader_cache.py      # os.replace retries a Windows sharing violation: the store writes each metallib to the cache, and a scanner holding the destination fails the rename
+~ dm/ios/Sources/DmLayout.h      # the picture's shape from DM_VIEW_ASPECT (full / w:h), one function for the layout, the TV path and the touch mapping
 ~ dm/ios/Sources/main.m         # modules from the Guest library, relaxed romfs lookup, shader preparation before the host
 ~ dm/ios/Sources/Launcher.swift # the Cheats section in the settings list (its view: dm/ios/Sources/CheatsView.swift)
 ~ dm/ios/Sources/front_ios.m     # reads the cheats switches again when Play is pressed: the host loads at launch, before the screen
 ~ dm/ios/Sources/DmGamepad.m    # profile pad_layout overridable at run time (DM_PAD_LAYOUT), for the first launch only
 ~ dm/ios/tools/pack_ipa.py      # keep the executable bit when packing on Windows
-
-# --- local only: not part of the assembled tree, and not drift ---
-
-# This fork's own tools and pages. They run from this checkout (the workflow calls `fork/scripts/...`), never from the tree
-# the shell is built in, so the overlay has no business copying them.
-! scripts/annotate_build_errors.py
-! scripts/check_release_notes.py
-! scripts/check_reference_calls.py
-! scripts/check_workflow_shell.py
-! scripts/check_tree.py
-! scripts/restore_mac_shader_marks.py
-! scripts/basemove
-! scripts/tests
-! packer
-! docs/CAPTURE.md
-! docs/CAPTURE.zh-CN.md
-! docs/SUPPORTED.md
-! docs/image-atomic-binding-contract.md
-! .gitignore
-
-# Upstream's own CI, issue templates and requirements: theirs to run, not ours. This fork's two workflows are "+" above.
-! .github
-
-# Upstream's iOS packaging tests. Kept for reference; this fork runs none of them, and upstream adds to them often.
-! dm/ios/tests
-
-# Screenshots the per-game READMEs embed. Not shipped, and a base move does not chase them: 68 of upstream's 140 are here.
-! docs/images
-
-# The `needs_mac_shaders` marks a base move restores (scripts/restore_mac_shader_marks.py): upstream's copy of these five
-# profiles says a Mac must translate them, ours says they are already translated for this route.
-! dm/games/01004A4010FEA000/game.tsv
-! dm/games/01005270232F2000/game.tsv
-! dm/games/0100606026F12000/game.tsv
-! dm/games/01006C300E9F0000/game.tsv
-! dm/games/0100F43008C44000/game.tsv
-
-# --- dropped: upstream has it, this fork does not carry it ---
-# (none yet; `git rm` the file and add a line here when something is only ever upstream's)
+~ dm/gfx/tools/unityfs.py    # Unity 2021.3.33-38f1's stripped Shader layout (SHADER_2021_3, hash f0c18427), ported from the Citizen Sleeper profile

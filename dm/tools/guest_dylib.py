@@ -8,6 +8,9 @@
 #   __TEXT,__dm<名>x0   原 text：[0, 圆整16K(TEXT_END))
 #   __DM<名>W,__img     可写段：[圆整16K(TEXT_END), PATCH_OFF)
 #   __TEXT,__dm<名>x1   补丁区：[PATCH_OFF, 圆整16K(文件尾))
+# 游戏运行期加载的 NRO 模块（nro.tsv，dm/tools/nro_collect.py）不各占三节：Mach-O 一张映像最多 255 节，Clubhouse Games 的
+# 55 个 NRO 就要 165 节。与 gen_embed.py 相同，它们的分段背靠背、每段 16K 对齐地放进 __TEXT,__dm_nro_x0 / __DM_NRO_W,__img /
+# __TEXT,__dm_nro_x1，并在 __DATA,__dm_nro_tab 里为每个模块登记 32 字节名字与三分段的偏移和长度（loader.c nro_pieces 读取）。
 # 文件格式上要注意的三点（都是真机 / Mac 上实测出来的）：
 #   · 必须声明依赖 /usr/lib/libSystem.B.dylib，否则系统拒绝加载（「must link with at least libSystem.dylib」）；
 #   · 每个节按 16K 对齐、整页大小：装载器用 vm_remap 按整页取；
@@ -22,6 +25,9 @@
 # __TEXT,__dm<name>x0   original text: [0, round16K(TEXT_END))
 # __DM<name>W,__img     writable segment: [round16K(TEXT_END), PATCH_OFF)
 # __TEXT,__dm<name>x1   patch area: [PATCH_OFF, round16K(end of file))
+# The NRO modules the game loads at run time (nro.tsv, dm/tools/nro_collect.py) do not get sections of their own: a Mach-O image has at most 255 sections, and Clubhouse Games' 55 NROs would
+# take 165. As in gen_embed.py, their pieces follow one another, each 16K aligned, in __TEXT,__dm_nro_x0 / __DM_NRO_W,__img / __TEXT,__dm_nro_x1, and __DATA,__dm_nro_tab lists per module the
+# 32-byte name and the offset and length of its three pieces (loader.c nro_pieces reads it back).
 # Three points to note about the file format (all found by measurement on a real device / Mac):
 # · a dependency on /usr/lib/libSystem.B.dylib must be declared, otherwise the system refuses to load it ("must link with at least libSystem.dylib");
 # · every section is aligned to 16K and is a whole number of pages: the loader takes whole pages with vm_remap;
@@ -62,33 +68,68 @@ def adhoc_sig(data, text_size):
     return struct.pack('>IIIII', 0xfade0cc0, 20 + len(cd), 1, 0, 20) + cd
 
 
+def pieces(out, n):   # the module's image and its (x0, W, x1) file ranges
+    hdr = dict(l[2:].split() for l in open(os.path.join(out, n + '.fixups.tsv')) if l.startswith('# '))
+    te, po = int(hdr['TEXT_END'], 16), int(hdr['PATCH_OFF'], 16)
+    img = open(os.path.join(out, n + '.patched.bin'), 'rb').read(); sz = len(img); a, end = r16(te), r16(sz)
+    if po < 0:
+        # Patch area in front of the base (patch_nso.py FAR, when an appended area would start beyond 112 MB): the file is
+        # the image up to FILE_IMAGE_LEN followed by the patch area, and the loader places that area -PATCH_OFF bytes before
+        # the base. So the three pieces are the image's first part, the rest of the image, and the patch area -- which is
+        # padded to a page here because the loader requires every piece's size to be 16 KB aligned.
+        fil = int(hdr['FILE_IMAGE_LEN'], 16)
+        assert a <= fil <= sz, (n, hex(a), hex(fil), hex(sz))
+        return img, sz, ((0, a), (a, fil), (fil, end))
+    assert po % PG == 0 and a <= po <= end, (n, hex(te), hex(po), hex(sz))
+    return img, sz, ((0, a), (a, po), (po, end))
+
+
+def cut(img, sz, part):
+    lo, hi = part
+    return img[lo:min(hi, sz)].ljust(hi - lo, b'\0')
+
+
+def nro_names(out):
+    """The NRO modules of nro.tsv (dm/tools/nro_collect.py), in manifest order; 'refused' rows have no module."""
+    p = os.path.join(out, 'nro.tsv')
+    if not os.path.exists(p): return []
+    return [l.split('\t')[0] for l in open(p, encoding='utf-8', errors='replace')
+            if l.strip() and not l.startswith('#') and not l.startswith('refused\t')]
+
+
 def build(out, names):
     text, wsegs = [], []
     for n in names:
-        hdr = dict(l[2:].split() for l in open(os.path.join(out, n + '.fixups.tsv')) if l.startswith('# '))
-        te, po = int(hdr['TEXT_END'], 16), int(hdr['PATCH_OFF'], 16)
-        img = open(os.path.join(out, n + '.patched.bin'), 'rb').read(); sz = len(img); a, end = r16(te), r16(sz)
-        cut = lambda lo, hi: img[lo:min(hi, sz)].ljust(hi - lo, b'\0')
-        if po < 0:
-            # Patch area in front of the base (patch_nso.py FAR, when an appended area would start beyond 112 MB): the file is
-            # the image up to FILE_IMAGE_LEN followed by the patch area, and the loader places that area -PATCH_OFF bytes before
-            # the base. So the three pieces are the image's first part, the rest of the image, and the patch area -- which is
-            # padded to a page here because the loader requires every piece's size to be 16 KB aligned.
-            fil = int(hdr['FILE_IMAGE_LEN'], 16)
-            assert a <= fil <= sz, (n, hex(a), hex(fil), hex(sz))
-            text += [('__dm%sx0' % n, cut(0, a))]
-            wsegs.append(('__DM%sW' % n, cut(a, fil)))
-            text += [('__dm%sx1' % n, cut(fil, end))]
-        else:
-            assert po % PG == 0 and a <= po <= end, (n, hex(te), hex(po), hex(sz))
-            text += [('__dm%sx0' % n, cut(0, a)), ('__dm%sx1' % n, cut(po, end))]
-            wsegs.append(('__DM%sW' % n, cut(a, po)))
+        img, sz, parts = pieces(out, n)
+        text += [('__dm%sx0' % n, cut(img, sz, parts[0]))]
+        wsegs.append(('__DM%sW' % n, cut(img, sz, parts[1])))
+        text += [('__dm%sx1' % n, cut(img, sz, parts[2]))]
+    # NRO modules the game loads at run time go into shared sections instead of sections of their own (see the header).
+    dseg = None
+    nros = nro_names(out)
+    if nros:
+        sec = ([], [], []); rows = []; at = [0, 0, 0]
+        for n in nros:
+            img, sz, parts = pieces(out, n)
+            row = n.encode().ljust(32, b'\0')
+            for i, part in enumerate(parts):
+                sec[i].append(cut(img, sz, part)); row += struct.pack('<QQ', at[i], part[1] - part[0]); at[i] += part[1] - part[0]
+            rows.append(row)
+        text += [('__dm_nro_x0', b''.join(sec[0])), ('__dm_nro_x1', b''.join(sec[2]))]
+        wsegs.append(('__DM_NRO_W', b''.join(sec[1])))
+        tab = b''.join(rows)
+        dseg = tab.ljust(r16(len(tab)), b'\0')
     off = PG; tsects = []; body = b''          # 第一页：文件头与装载命令 | first page: file header and load commands
     for sn, b in text:
         tsects.append((sn, off, len(b), 0x80000400)); body += b; off += len(b)   # 纯指令节 | pure instructions section
     cmds = [segment('__TEXT', 0, off, 0, off, 5, tsects)]; tsz = off
     for sn, b in wsegs:
         cmds.append(segment(sn, off, len(b), off, len(b), 3, [('__img', off, len(b), 0)])); body += b; off += len(b)
+    if dseg is not None:
+        # prot 3: dyld refuses any segment named __DATA whose permissions are not 'rw-' ("__DATA segment permissions
+        # is not 'rw-'" at dlopen), whatever the bytes in it
+        cmds.append(segment('__DATA', off, len(dseg), off, len(dseg), 3, [('__dm_nro_tab', off, len(dseg), 0)]))
+        body += dseg; off += len(dseg)
     strtab = b'\0' * 8
     cs_off = (off + len(strtab) + 15) & ~15; cs_size = (((cs_off // 4096 + 1) * 52 + 4095) & ~4095) + 0x40000   # 签名区：16 字节对齐；留足 SHA-1 + SHA-256 页哈希（52 字节/页）外加 256K | signature area: 16-byte aligned; room for SHA-1 + SHA-256 page hashes (52 bytes/page) plus 256K
     uuid = hashlib.sha256(body).digest()[:16]   # 由内容定：同样的输入在哪台机器上出的库都逐字节相同 | determined by content: the same input yields a byte-for-byte identical library on whatever machine it is built

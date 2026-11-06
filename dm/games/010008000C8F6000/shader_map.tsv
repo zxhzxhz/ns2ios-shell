@@ -1,0 +1,545 @@
+# kind: evidence  Lyrica shaders (provisional profile) (Unity Shader / GLSLC in RomFS + main) → control section + code area keys (dm/gfx/tools/shader_split.py)
+# column 5 records where each key first appears; no PC shader pairing supplied
+package	index	stage	dm_ctl_sha16	source
+vs_main.bin	0	vertex	24e4cd391d993137	main#GLSLC@0x2727ef8
+vs_main.bin	1	vertex	d19b47f9ea5c3cfe	main#GLSLC@0x2728ab8
+ps_main.bin	0	pixel	17b082dfef30eba9	main#GLSLC@0x2729778
+ps_main.bin	1	pixel	889465df59838dc0	main#GLSLC@0x272a438
+ps_main.bin	2	pixel	e46f75eec323df1d	main#GLSLC@0x272b1f8
+ps_main.bin	3	pixel	a23dda46c07f800d	main#GLSLC@0x272c0b8
+ps_main.bin	4	pixel	bf76784f461275c7	main#GLSLC@0x272cd78
+ps_main.bin	5	pixel	abcdb66b44f1313d	main#GLSLC@0x272db38
+vs_main.bin	2	vertex	f3a2af4f812f7366	main#GLSLC@0x272e9f8
+ps_main.bin	6	pixel	987c069874bbe974	main#GLSLC@0x272f5b8
+cs_main.bin	0	compute	552bbc8ffc2459e4	main#GLSLC@0x2730178
+ps_romfs.bin	0	pixel	2c4f225a95f2be39	/Data/Resources/unity default resources#GUI/Text Shader#var19.3
+vs_romfs.bin	0	vertex	d600647a2330fbdc	/Data/Resources/unity default resources#GUI/Text Shader#var19.3
+ps_romfs.bin	1	pixel	1647b71aecb82886	/Data/Resources/unity default resources#GUI/Text Shader#var19.4
+vs_romfs.bin	1	vertex	de026bdfe8af545a	/Data/Resources/unity default resources#GUI/Text Shader#var19.4
+vs_romfs.bin	2	vertex	21f807dd78cef8fc	/Data/Resources/unity default resources#GUI/Text Shader#var19.5
+ps_romfs.bin	2	pixel	47eab4afa131060e	/Data/Resources/unity default resources#GUI/Text Shader#var19.5
+vs_romfs.bin	3	vertex	c1ccdaa9951d96ea	/Data/Resources/unity default resources#GUI/Text Shader#var19.6
+ps_romfs.bin	3	pixel	fcfd3df4a1ba0f63	/Data/Resources/unity default resources#GUI/Text Shader#var19.6
+vs_romfs.bin	4	vertex	8c53ff0e02fb4727	/Data/Resources/unity default resources#Hidden/FrameDebuggerRenderTargetDisplay#var19.10
+ps_romfs.bin	4	pixel	e0be1c34ff5b2f67	/Data/Resources/unity default resources#Hidden/FrameDebuggerRenderTargetDisplay#var19.10
+vs_romfs.bin	5	vertex	9315d4ad51ac9933	/Data/Resources/unity default resources#Hidden/FrameDebuggerRenderTargetDisplay#var19.11
+ps_romfs.bin	5	pixel	be3973adf1c94be0	/Data/Resources/unity default resources#Hidden/FrameDebuggerRenderTargetDisplay#var19.11
+vs_romfs.bin	6	vertex	10c9dc9c1d054f84	/Data/Resources/unity default resources#Hidden/FrameDebuggerRenderTargetDisplay#var19.12
+ps_romfs.bin	6	pixel	d895b42e7a336d72	/Data/Resources/unity default resources#Hidden/FrameDebuggerRenderTargetDisplay#var19.12
+vs_romfs.bin	7	vertex	57adb9d0e7fc3714	/Data/Resources/unity default resources#Hidden/FrameDebuggerRenderTargetDisplay#var19.13
+ps_romfs.bin	7	pixel	b89cd0d0f5d624c0	/Data/Resources/unity default resources#Hidden/FrameDebuggerRenderTargetDisplay#var19.13
+vs_romfs.bin	8	vertex	481dce4db931b867	/Data/Resources/unity default resources#Hidden/FrameDebuggerRenderTargetDisplay#var19.5
+ps_romfs.bin	8	pixel	c5f06b62209fa477	/Data/Resources/unity default resources#Hidden/FrameDebuggerRenderTargetDisplay#var19.5
+vs_romfs.bin	9	vertex	2696868bc4c5b364	/Data/Resources/unity default resources#Hidden/FrameDebuggerRenderTargetDisplay#var19.6
+ps_romfs.bin	9	pixel	e1542df4b802019f	/Data/Resources/unity default resources#Hidden/FrameDebuggerRenderTargetDisplay#var19.6
+vs_romfs.bin	10	vertex	706cb164e9dfa970	/Data/Resources/unity default resources#Hidden/FrameDebuggerRenderTargetDisplay#var19.7
+ps_romfs.bin	10	pixel	fe267c70742bd0b2	/Data/Resources/unity default resources#Hidden/FrameDebuggerRenderTargetDisplay#var19.7
+ps_romfs.bin	11	pixel	0846027219d90fd3	/Data/Resources/unity default resources#Hidden/FrameDebuggerRenderTargetDisplay#var19.8
+vs_romfs.bin	11	vertex	b5bd84e08b46fc73	/Data/Resources/unity default resources#Hidden/FrameDebuggerRenderTargetDisplay#var19.8
+ps_romfs.bin	12	pixel	7e3e00250730566a	/Data/Resources/unity default resources#Hidden/FrameDebuggerRenderTargetDisplay#var19.9
+vs_romfs.bin	12	vertex	ba2f2184685c6630	/Data/Resources/unity default resources#Hidden/FrameDebuggerRenderTargetDisplay#var19.9
+vs_romfs.bin	13	vertex	ce52aa9608a67850	/Data/Resources/unity default resources#Hidden/Internal-Colored#var19.3
+ps_romfs.bin	13	pixel	ede131909295ac54	/Data/Resources/unity default resources#Hidden/Internal-Colored#var19.3
+vs_romfs.bin	14	vertex	14420dbc23b13b7a	/Data/Resources/unity default resources#Hidden/Internal-Colored#var19.4
+ps_romfs.bin	14	pixel	4e328f831b03b7be	/Data/Resources/unity default resources#Hidden/Internal-Colored#var19.4
+vs_romfs.bin	15	vertex	65af2a18c8e74993	/Data/Resources/unity default resources#Hidden/Internal-Colored#var19.5
+ps_romfs.bin	15	pixel	90fac4d26bad9851	/Data/Resources/unity default resources#Hidden/Internal-Colored#var19.5
+ps_romfs.bin	16	pixel	328875f2548ec72a	/Data/Resources/unity default resources#Hidden/Internal-Colored#var19.6
+vs_romfs.bin	16	vertex	c09ddb5145718e0f	/Data/Resources/unity default resources#Hidden/Internal-Colored#var19.6
+ps_romfs.bin	17	pixel	3de7d6af7135c431	/Data/Resources/unity default resources#Hidden/Internal-Loading#var19.3
+vs_romfs.bin	17	vertex	93c09e17c0aa0669	/Data/Resources/unity default resources#Hidden/Internal-Loading#var19.3
+vs_romfs.bin	18	vertex	3af5189fe9da1034	/Data/Resources/unity default resources#Hidden/Internal-Loading#var19.4
+ps_romfs.bin	18	pixel	aae6d2a7d814ebdc	/Data/Resources/unity default resources#Hidden/Internal-Loading#var19.4
+vs_romfs.bin	19	vertex	0ff7a92ea720259e	/Data/Resources/unity default resources#Hidden/Internal-Loading#var19.5
+ps_romfs.bin	19	pixel	fb424314d78645da	/Data/Resources/unity default resources#Hidden/Internal-Loading#var19.5
+ps_romfs.bin	20	pixel	c1d230d8e3ab73a4	/Data/Resources/unity default resources#Hidden/Internal-Loading#var19.6
+vs_romfs.bin	20	vertex	ef2c15a63a274bd3	/Data/Resources/unity default resources#Hidden/Internal-Loading#var19.6
+vs_romfs.bin	21	vertex	062418eab18f45f8	/Data/Resources/unity default resources#Hidden/InternalClear#var19.10
+ps_romfs.bin	21	pixel	7913b3e2ed238afc	/Data/Resources/unity default resources#Hidden/InternalClear#var19.10
+ps_romfs.bin	22	pixel	9c43dac7c52eb223	/Data/Resources/unity default resources#Hidden/InternalClear#var19.11
+vs_romfs.bin	22	vertex	a9fa9162d813fbb7	/Data/Resources/unity default resources#Hidden/InternalClear#var19.11
+vs_romfs.bin	23	vertex	9ecc51fc7074dac5	/Data/Resources/unity default resources#Hidden/InternalClear#var19.12
+ps_romfs.bin	23	pixel	b4760017c2cf1e4d	/Data/Resources/unity default resources#Hidden/InternalClear#var19.12
+ps_romfs.bin	24	pixel	355c974866a3cfb8	/Data/Resources/unity default resources#Hidden/InternalClear#var19.13
+vs_romfs.bin	24	vertex	89cee9669db3854b	/Data/Resources/unity default resources#Hidden/InternalClear#var19.13
+ps_romfs.bin	25	pixel	3a68e398085d44c1	/Data/Resources/unity default resources#Hidden/InternalClear#var19.14
+vs_romfs.bin	25	vertex	cdb321952c712e0e	/Data/Resources/unity default resources#Hidden/InternalClear#var19.14
+ps_romfs.bin	26	pixel	22c8843d582cf820	/Data/Resources/unity default resources#Hidden/InternalClear#var19.15
+vs_romfs.bin	26	vertex	27a842cd1cc7ccb7	/Data/Resources/unity default resources#Hidden/InternalClear#var19.15
+ps_romfs.bin	27	pixel	876033a4990695e9	/Data/Resources/unity default resources#Hidden/InternalClear#var19.16
+vs_romfs.bin	27	vertex	cebc0b8e8c501d4a	/Data/Resources/unity default resources#Hidden/InternalClear#var19.16
+ps_romfs.bin	28	pixel	8799d4b70d01b876	/Data/Resources/unity default resources#Hidden/InternalClear#var19.17
+vs_romfs.bin	28	vertex	d1e7ba9fd785333c	/Data/Resources/unity default resources#Hidden/InternalClear#var19.17
+vs_romfs.bin	29	vertex	70dbef67e2f0ca10	/Data/Resources/unity default resources#Hidden/InternalClear#var19.18
+ps_romfs.bin	29	pixel	d92a09cd391d1388	/Data/Resources/unity default resources#Hidden/InternalClear#var19.18
+ps_romfs.bin	30	pixel	4bb27244ba5c9e57	/Data/Resources/unity default resources#Hidden/InternalClear#var19.19
+vs_romfs.bin	30	vertex	d2333f3b870d9ae8	/Data/Resources/unity default resources#Hidden/InternalClear#var19.19
+vs_romfs.bin	31	vertex	0e896680302b1c03	/Data/Resources/unity default resources#Hidden/InternalClear#var19.20
+ps_romfs.bin	31	pixel	a17cfe568bcf3198	/Data/Resources/unity default resources#Hidden/InternalClear#var19.20
+ps_romfs.bin	32	pixel	231e3475674d819c	/Data/Resources/unity default resources#Hidden/InternalClear#var19.21
+vs_romfs.bin	32	vertex	f85d3ca08ac3b1bb	/Data/Resources/unity default resources#Hidden/InternalClear#var19.21
+ps_romfs.bin	33	pixel	40cfedf46994711f	/Data/Resources/unity default resources#Hidden/InternalClear#var19.22
+vs_romfs.bin	33	vertex	e32c0187d9a00334	/Data/Resources/unity default resources#Hidden/InternalClear#var19.22
+vs_romfs.bin	34	vertex	d094d959bf85512c	/Data/Resources/unity default resources#Hidden/InternalClear#var19.23
+ps_romfs.bin	34	pixel	e4a90541793d6a24	/Data/Resources/unity default resources#Hidden/InternalClear#var19.23
+ps_romfs.bin	35	pixel	066f4e2c49608423	/Data/Resources/unity default resources#Hidden/InternalClear#var19.24
+vs_romfs.bin	35	vertex	5befb7a8767a2739	/Data/Resources/unity default resources#Hidden/InternalClear#var19.24
+vs_romfs.bin	36	vertex	0ea8f2f16fb4a86e	/Data/Resources/unity default resources#Hidden/InternalClear#var19.25
+ps_romfs.bin	36	pixel	2e57bce83f242739	/Data/Resources/unity default resources#Hidden/InternalClear#var19.25
+ps_romfs.bin	37	pixel	825a99084e753c8f	/Data/Resources/unity default resources#Hidden/InternalClear#var19.26
+vs_romfs.bin	37	vertex	fbc391240ec963b9	/Data/Resources/unity default resources#Hidden/InternalClear#var19.26
+ps_romfs.bin	38	pixel	4426e0b4274215e1	/Data/Resources/unity default resources#Hidden/InternalClear#var19.27
+vs_romfs.bin	38	vertex	b1433c2e914c7a0e	/Data/Resources/unity default resources#Hidden/InternalClear#var19.27
+ps_romfs.bin	39	pixel	0ec08d6301397903	/Data/Resources/unity default resources#Hidden/InternalClear#var19.28
+vs_romfs.bin	39	vertex	2110b6571a490068	/Data/Resources/unity default resources#Hidden/InternalClear#var19.28
+vs_romfs.bin	40	vertex	300b8e1aa87c1937	/Data/Resources/unity default resources#Hidden/InternalClear#var19.29
+ps_romfs.bin	40	pixel	b52c1342c6076eec	/Data/Resources/unity default resources#Hidden/InternalClear#var19.29
+vs_romfs.bin	41	vertex	9480ae1bdb0dbb2e	/Data/Resources/unity default resources#Hidden/InternalClear#var19.3
+ps_romfs.bin	41	pixel	c83d7b6e3bb809b3	/Data/Resources/unity default resources#Hidden/InternalClear#var19.3
+ps_romfs.bin	42	pixel	9249b8f0da79ba6f	/Data/Resources/unity default resources#Hidden/InternalClear#var19.30
+vs_romfs.bin	42	vertex	f571e69500966baa	/Data/Resources/unity default resources#Hidden/InternalClear#var19.30
+vs_romfs.bin	43	vertex	60753784d2a9ef37	/Data/Resources/unity default resources#Hidden/InternalClear#var19.31
+ps_romfs.bin	43	pixel	fb47cc27cf51759e	/Data/Resources/unity default resources#Hidden/InternalClear#var19.31
+vs_romfs.bin	44	vertex	4598900e150bd354	/Data/Resources/unity default resources#Hidden/InternalClear#var19.32
+ps_romfs.bin	44	pixel	f42087f267ba70fe	/Data/Resources/unity default resources#Hidden/InternalClear#var19.32
+vs_romfs.bin	45	vertex	4bf8ddf37eb61f4b	/Data/Resources/unity default resources#Hidden/InternalClear#var19.33
+ps_romfs.bin	45	pixel	da3b4fed10150b24	/Data/Resources/unity default resources#Hidden/InternalClear#var19.33
+ps_romfs.bin	46	pixel	3fb0ada0fc7528ec	/Data/Resources/unity default resources#Hidden/InternalClear#var19.34
+vs_romfs.bin	46	vertex	d06356d8c0c7fa9f	/Data/Resources/unity default resources#Hidden/InternalClear#var19.34
+ps_romfs.bin	47	pixel	86c96bf05d984051	/Data/Resources/unity default resources#Hidden/InternalClear#var19.4
+vs_romfs.bin	47	vertex	97086120b03efbd8	/Data/Resources/unity default resources#Hidden/InternalClear#var19.4
+vs_romfs.bin	48	vertex	40da93a93183f728	/Data/Resources/unity default resources#Hidden/InternalClear#var19.5
+ps_romfs.bin	48	pixel	7b1d25ce85120e45	/Data/Resources/unity default resources#Hidden/InternalClear#var19.5
+ps_romfs.bin	49	pixel	b0e959e8f51cdc00	/Data/Resources/unity default resources#Hidden/InternalClear#var19.6
+vs_romfs.bin	49	vertex	c1889fbda429d7db	/Data/Resources/unity default resources#Hidden/InternalClear#var19.6
+ps_romfs.bin	50	pixel	5edc812ebb648524	/Data/Resources/unity default resources#Hidden/InternalClear#var19.7
+vs_romfs.bin	50	vertex	b502206fa5347214	/Data/Resources/unity default resources#Hidden/InternalClear#var19.7
+vs_romfs.bin	51	vertex	60a0dec7a900cb8d	/Data/Resources/unity default resources#Hidden/InternalClear#var19.8
+ps_romfs.bin	51	pixel	dcb06151763fc201	/Data/Resources/unity default resources#Hidden/InternalClear#var19.8
+ps_romfs.bin	52	pixel	920cf98273ec7f2a	/Data/Resources/unity default resources#Hidden/InternalClear#var19.9
+vs_romfs.bin	52	vertex	ded199a638d301ee	/Data/Resources/unity default resources#Hidden/InternalClear#var19.9
+ps_romfs.bin	53	pixel	8debfcbc09a67a6a	/Data/Resources/unity default resources#Hidden/InternalErrorShader#var19.10
+vs_romfs.bin	53	vertex	a4f9c8ff7b999c3b	/Data/Resources/unity default resources#Hidden/InternalErrorShader#var19.10
+ps_romfs.bin	54	pixel	1718b8f99fe92cad	/Data/Resources/unity default resources#Hidden/InternalErrorShader#var19.11
+vs_romfs.bin	54	vertex	b9f0798d4993880f	/Data/Resources/unity default resources#Hidden/InternalErrorShader#var19.11
+ps_romfs.bin	55	pixel	4b7252a6ad55d057	/Data/Resources/unity default resources#Hidden/InternalErrorShader#var19.12
+vs_romfs.bin	55	vertex	f14f54a30a07510d	/Data/Resources/unity default resources#Hidden/InternalErrorShader#var19.12
+ps_romfs.bin	56	pixel	bc530f71b2b03b6f	/Data/Resources/unity default resources#Hidden/InternalErrorShader#var19.3
+vs_romfs.bin	56	vertex	fa4aaec28f984f5c	/Data/Resources/unity default resources#Hidden/InternalErrorShader#var19.3
+vs_romfs.bin	57	vertex	14230849e2ad925a	/Data/Resources/unity default resources#Hidden/InternalErrorShader#var19.4
+ps_romfs.bin	57	pixel	c155d9d3503f9fca	/Data/Resources/unity default resources#Hidden/InternalErrorShader#var19.4
+ps_romfs.bin	58	pixel	37f7ef362aa96b0f	/Data/Resources/unity default resources#Hidden/InternalErrorShader#var19.5
+vs_romfs.bin	58	vertex	5953c945b9febf60	/Data/Resources/unity default resources#Hidden/InternalErrorShader#var19.5
+vs_romfs.bin	59	vertex	e16f3c80a8a48129	/Data/Resources/unity default resources#Hidden/InternalErrorShader#var19.6
+ps_romfs.bin	59	pixel	e95cdb395ec9baac	/Data/Resources/unity default resources#Hidden/InternalErrorShader#var19.6
+vs_romfs.bin	60	vertex	398079941e3d4c7f	/Data/Resources/unity default resources#Hidden/InternalErrorShader#var19.9
+ps_romfs.bin	60	pixel	6237b8f04dbd1c21	/Data/Resources/unity default resources#Hidden/InternalErrorShader#var19.9
+cs_romfs.bin	0	compute	1099d1baa5140160	/Data/Resources/unity default resources#Internal-BlendShape#main.0
+cs_romfs.bin	1	compute	526c94d038c68531	/Data/Resources/unity default resources#Internal-BlendShape#main.0
+cs_romfs.bin	2	compute	586aeee231dbf739	/Data/Resources/unity default resources#Internal-BlendShape#main.0
+cs_romfs.bin	3	compute	17b7b55ec095bf56	/Data/Resources/unity default resources#Internal-Skinning#main.0
+cs_romfs.bin	4	compute	20bcdeb2b537ea5a	/Data/Resources/unity default resources#Internal-Skinning#main.0
+cs_romfs.bin	5	compute	2d00e1de52d3d62b	/Data/Resources/unity default resources#Internal-Skinning#main.0
+cs_romfs.bin	6	compute	383e7771e93b6ac0	/Data/Resources/unity default resources#Internal-Skinning#main.0
+cs_romfs.bin	7	compute	3f7294e75a1bbd8c	/Data/Resources/unity default resources#Internal-Skinning#main.0
+cs_romfs.bin	8	compute	637ad928c7e23998	/Data/Resources/unity default resources#Internal-Skinning#main.0
+cs_romfs.bin	9	compute	685c1fa48fb2c590	/Data/Resources/unity default resources#Internal-Skinning#main.0
+cs_romfs.bin	10	compute	7f4c568e2fbf4f3e	/Data/Resources/unity default resources#Internal-Skinning#main.0
+cs_romfs.bin	11	compute	8039afbb0f1a592a	/Data/Resources/unity default resources#Internal-Skinning#main.0
+cs_romfs.bin	12	compute	93f43b8bbab5866c	/Data/Resources/unity default resources#Internal-Skinning#main.0
+cs_romfs.bin	13	compute	bf0656de44715530	/Data/Resources/unity default resources#Internal-Skinning#main.0
+cs_romfs.bin	14	compute	c208f16a5b3ab215	/Data/Resources/unity default resources#Internal-Skinning#main.0
+cs_romfs.bin	15	compute	d43ec310e91b3943	/Data/Resources/unity default resources#Internal-Skinning#main.0
+cs_romfs.bin	16	compute	d67fee2d51a5f254	/Data/Resources/unity default resources#Internal-Skinning#main.0
+cs_romfs.bin	17	compute	e08566d0f6afa9b3	/Data/Resources/unity default resources#Internal-Skinning#main.0
+cs_romfs.bin	18	compute	e0d9327b4955a880	/Data/Resources/unity default resources#Internal-Skinning#main.0
+cs_romfs.bin	19	compute	c73088133a436901	/Data/Resources/unity default resources#Internal-VT-TranslationTableReplace#ReplaceTranslationTable.0
+cs_romfs.bin	20	compute	0f1d89c7a5faf4ed	/Data/Resources/unity default resources#Internal-VT-TranslationTableUpsample#Main.0
+cs_romfs.bin	21	compute	117bc099bcfda8d9	/Data/Resources/unity default resources#Internal-VT-TranslationTableUpsample#Main.0
+cs_romfs.bin	22	compute	1fc740810704c4a2	/Data/Resources/unity default resources#Internal-VT-TranslationTableUpsample#Main.0
+cs_romfs.bin	23	compute	502e5475f5bde5dd	/Data/Resources/unity default resources#Internal-VT-TranslationTableUpsample#Main.0
+cs_romfs.bin	24	compute	54e195a283381092	/Data/Resources/unity default resources#Internal-VT-TranslationTableUpsample#Main.0
+cs_romfs.bin	25	compute	6394b9a5bb9907b7	/Data/Resources/unity default resources#Internal-VT-TranslationTableUpsample#Main.0
+cs_romfs.bin	26	compute	6b70726d84a0095d	/Data/Resources/unity default resources#Internal-VT-TranslationTableUpsample#Main.0
+cs_romfs.bin	27	compute	6cd245de21a205fd	/Data/Resources/unity default resources#Internal-VT-TranslationTableUpsample#Main.0
+cs_romfs.bin	28	compute	6f72b5296833e077	/Data/Resources/unity default resources#Internal-VT-TranslationTableUpsample#Main.0
+cs_romfs.bin	29	compute	8edfd5cd45de2766	/Data/Resources/unity default resources#Internal-VT-TranslationTableUpsample#Main.0
+cs_romfs.bin	30	compute	9f0bc000ee8099fc	/Data/Resources/unity default resources#Internal-VT-TranslationTableUpsample#Main.0
+cs_romfs.bin	31	compute	a88747b15c335c3c	/Data/Resources/unity default resources#Internal-VT-TranslationTableUpsample#Main.0
+cs_romfs.bin	32	compute	d47cf2fb8860b9bd	/Data/Resources/unity default resources#Internal-VT-TranslationTableUpsample#Main.0
+cs_romfs.bin	33	compute	e19158b9bf5d018a	/Data/Resources/unity default resources#Internal-VT-TranslationTableUpsample#Main.0
+cs_romfs.bin	34	compute	f5ed027ca034aee2	/Data/Resources/unity default resources#Internal-VT-TranslationTableUpsample#Main.0
+cs_romfs.bin	35	compute	f738da3a793713ba	/Data/Resources/unity default resources#Internal-VT-TranslationTableUpsample#Main.0
+ps_romfs.bin	61	pixel	7f0a408fb7565d47	/Data/Resources/unity_builtin_extra#Hidden/BlitCopy#var19.1
+vs_romfs.bin	61	vertex	c10cac5f97d7dbf4	/Data/Resources/unity_builtin_extra#Hidden/BlitCopy#var19.1
+vs_romfs.bin	62	vertex	c959cabf23fb7ca2	/Data/Resources/unity_builtin_extra#Hidden/BlitCopyDepth#var19.1
+ps_romfs.bin	62	pixel	f7f3cd884da014ad	/Data/Resources/unity_builtin_extra#Hidden/BlitCopyDepth#var19.1
+ps_romfs.bin	63	pixel	02039651445a40e7	/Data/Resources/unity_builtin_extra#Hidden/BlitCopyHDRTonemap#var19.1
+vs_romfs.bin	63	vertex	24f015810658974d	/Data/Resources/unity_builtin_extra#Hidden/BlitCopyHDRTonemap#var19.1
+vs_romfs.bin	64	vertex	0fbcced6aa0157ce	/Data/Resources/unity_builtin_extra#Hidden/BlitCopyWithDepth#var19.1
+ps_romfs.bin	64	pixel	3acb1f841da8aaa7	/Data/Resources/unity_builtin_extra#Hidden/BlitCopyWithDepth#var19.1
+ps_romfs.bin	65	pixel	3d2491724426a71d	/Data/Resources/unity_builtin_extra#Hidden/BlitToDepth#var19.1
+vs_romfs.bin	65	vertex	f1b93116c2f96d2a	/Data/Resources/unity_builtin_extra#Hidden/BlitToDepth#var19.1
+vs_romfs.bin	66	vertex	80cbae1017191f42	/Data/Resources/unity_builtin_extra#Hidden/BlitToDepth_MSAA#var19.1
+ps_romfs.bin	66	pixel	8afa677445c45c0d	/Data/Resources/unity_builtin_extra#Hidden/BlitToDepth_MSAA#var19.1
+vs_romfs.bin	67	vertex	65c013660c32c93e	/Data/Resources/unity_builtin_extra#Hidden/Compositing#var19.1
+ps_romfs.bin	67	pixel	7d747a1c8d37ea49	/Data/Resources/unity_builtin_extra#Hidden/Compositing#var19.1
+vs_romfs.bin	68	vertex	0ffd2c92087e4b54	/Data/Resources/unity_builtin_extra#Hidden/ConvertTexture#var19.1
+ps_romfs.bin	68	pixel	69545608515848f8	/Data/Resources/unity_builtin_extra#Hidden/ConvertTexture#var19.1
+ps_romfs.bin	69	pixel	b3bd0838d6e6903c	/Data/Resources/unity_builtin_extra#Hidden/CubeBlend#var19.1
+vs_romfs.bin	69	vertex	f88c4d15c857a6fe	/Data/Resources/unity_builtin_extra#Hidden/CubeBlend#var19.1
+ps_romfs.bin	70	pixel	1336f5f59836b863	/Data/Resources/unity_builtin_extra#Hidden/CubeBlend#var19.2
+vs_romfs.bin	70	vertex	c3e22104e84d8f90	/Data/Resources/unity_builtin_extra#Hidden/CubeBlend#var19.2
+vs_romfs.bin	71	vertex	77866ae77c4f9fbf	/Data/Resources/unity_builtin_extra#Hidden/CubeBlur#var19.1
+ps_romfs.bin	71	pixel	b5c36dae6d077789	/Data/Resources/unity_builtin_extra#Hidden/CubeBlur#var19.1
+ps_romfs.bin	72	pixel	8d59c03ce11a8697	/Data/Resources/unity_builtin_extra#Hidden/CubeBlur#var19.2
+vs_romfs.bin	72	vertex	e224ad886962b455	/Data/Resources/unity_builtin_extra#Hidden/CubeBlur#var19.2
+ps_romfs.bin	73	pixel	1a047132431c2e10	/Data/Resources/unity_builtin_extra#Hidden/CubeCopy#var19.1
+vs_romfs.bin	73	vertex	d6903dd661824927	/Data/Resources/unity_builtin_extra#Hidden/CubeCopy#var19.1
+ps_romfs.bin	74	pixel	2674db57c3fc0e89	/Data/Resources/unity_builtin_extra#Hidden/CubeCopy#var19.2
+vs_romfs.bin	74	vertex	f278b8c603363656	/Data/Resources/unity_builtin_extra#Hidden/CubeCopy#var19.2
+ps_romfs.bin	75	pixel	113fb70852223b1f	/Data/Resources/unity_builtin_extra#Hidden/Internal-CombineDepthNormals#var19.1
+vs_romfs.bin	75	vertex	c85f26ba6ecaf138	/Data/Resources/unity_builtin_extra#Hidden/Internal-CombineDepthNormals#var19.1
+ps_romfs.bin	76	pixel	34b2efb2fff2786b	/Data/Resources/unity_builtin_extra#Hidden/Internal-CubemapToEquirect#var19.1
+vs_romfs.bin	76	vertex	fc0c635098356906	/Data/Resources/unity_builtin_extra#Hidden/Internal-CubemapToEquirect#var19.1
+vs_romfs.bin	77	vertex	067db5e8a77c8f01	/Data/Resources/unity_builtin_extra#Hidden/Internal-DebugPattern#var19.1
+ps_romfs.bin	77	pixel	0cacbed976ab9dcc	/Data/Resources/unity_builtin_extra#Hidden/Internal-DebugPattern#var19.1
+ps_romfs.bin	78	pixel	35748e75e624310e	/Data/Resources/unity_builtin_extra#Hidden/Internal-DebugPattern#var19.2
+vs_romfs.bin	78	vertex	8c89839d799760dd	/Data/Resources/unity_builtin_extra#Hidden/Internal-DebugPattern#var19.2
+vs_romfs.bin	79	vertex	aac4fd74987bcfee	/Data/Resources/unity_builtin_extra#Hidden/Internal-DebugPattern#var19.3
+ps_romfs.bin	79	pixel	cbba60b0cd2bfd59	/Data/Resources/unity_builtin_extra#Hidden/Internal-DebugPattern#var19.3
+vs_romfs.bin	80	vertex	85307e23ce9d93f4	/Data/Resources/unity_builtin_extra#Hidden/Internal-DeferredReflections#var19.1
+ps_romfs.bin	80	pixel	dfb10d88f1d2ac9d	/Data/Resources/unity_builtin_extra#Hidden/Internal-DeferredReflections#var19.1
+ps_romfs.bin	81	pixel	0856a5c3d49abaff	/Data/Resources/unity_builtin_extra#Hidden/Internal-DeferredReflections#var19.3
+vs_romfs.bin	81	vertex	a854b3b3be113964	/Data/Resources/unity_builtin_extra#Hidden/Internal-DeferredReflections#var19.3
+ps_romfs.bin	82	pixel	8e05c098b48bcdd3	/Data/Resources/unity_builtin_extra#Hidden/Internal-DeferredReflections#var19.4
+vs_romfs.bin	82	vertex	c1568ca26e1014a0	/Data/Resources/unity_builtin_extra#Hidden/Internal-DeferredReflections#var19.4
+vs_romfs.bin	83	vertex	4085cb5fab185afc	/Data/Resources/unity_builtin_extra#Hidden/Internal-DeferredShading#var19.11
+ps_romfs.bin	83	pixel	b024d838f7db5cf1	/Data/Resources/unity_builtin_extra#Hidden/Internal-DeferredShading#var19.11
+ps_romfs.bin	84	pixel	5e636990bcf1e68b	/Data/Resources/unity_builtin_extra#Hidden/Internal-DeferredShading#var19.12
+vs_romfs.bin	84	vertex	a039ca4c72c6013c	/Data/Resources/unity_builtin_extra#Hidden/Internal-DeferredShading#var19.12
+ps_romfs.bin	85	pixel	83264393940cf90f	/Data/Resources/unity_builtin_extra#Hidden/Internal-DeferredShading#var19.13
+vs_romfs.bin	85	vertex	a4302729b7722973	/Data/Resources/unity_builtin_extra#Hidden/Internal-DeferredShading#var19.13
+vs_romfs.bin	86	vertex	7ade6ee3a7f98a8a	/Data/Resources/unity_builtin_extra#Hidden/Internal-DeferredShading#var19.14
+ps_romfs.bin	86	pixel	d61aa93f7a27f8c7	/Data/Resources/unity_builtin_extra#Hidden/Internal-DeferredShading#var19.14
+ps_romfs.bin	87	pixel	3165c972f13ba760	/Data/Resources/unity_builtin_extra#Hidden/Internal-DeferredShading#var19.15
+vs_romfs.bin	87	vertex	875f24abd2bb9668	/Data/Resources/unity_builtin_extra#Hidden/Internal-DeferredShading#var19.15
+ps_romfs.bin	88	pixel	49e6dd2bb4a71182	/Data/Resources/unity_builtin_extra#Hidden/Internal-DeferredShading#var19.16
+vs_romfs.bin	88	vertex	67d0e6339298128a	/Data/Resources/unity_builtin_extra#Hidden/Internal-DeferredShading#var19.16
+ps_romfs.bin	89	pixel	2ab8701320e1bcfc	/Data/Resources/unity_builtin_extra#Hidden/Internal-DeferredShading#var19.17
+vs_romfs.bin	89	vertex	9e44e08c99fe869a	/Data/Resources/unity_builtin_extra#Hidden/Internal-DeferredShading#var19.17
+ps_romfs.bin	90	pixel	5c9af856865e5ffb	/Data/Resources/unity_builtin_extra#Hidden/Internal-DeferredShading#var19.18
+vs_romfs.bin	90	vertex	71884202b98effea	/Data/Resources/unity_builtin_extra#Hidden/Internal-DeferredShading#var19.18
+ps_romfs.bin	91	pixel	761267116d3973f1	/Data/Resources/unity_builtin_extra#Hidden/Internal-DeferredShading#var19.19
+vs_romfs.bin	91	vertex	f093e21c378bbea8	/Data/Resources/unity_builtin_extra#Hidden/Internal-DeferredShading#var19.19
+vs_romfs.bin	92	vertex	42656a37121347cb	/Data/Resources/unity_builtin_extra#Hidden/Internal-DeferredShading#var19.20
+ps_romfs.bin	92	pixel	c9284a8ac97fd00e	/Data/Resources/unity_builtin_extra#Hidden/Internal-DeferredShading#var19.20
+ps_romfs.bin	93	pixel	6d150d2b07f55803	/Data/Resources/unity_builtin_extra#Hidden/Internal-DeferredShading#var19.21
+vs_romfs.bin	93	vertex	9aba08e63c2efb3b	/Data/Resources/unity_builtin_extra#Hidden/Internal-DeferredShading#var19.21
+vs_romfs.bin	94	vertex	3de92dbd9a60e228	/Data/Resources/unity_builtin_extra#Hidden/Internal-DeferredShading#var19.22
+ps_romfs.bin	94	pixel	edec3b207557f2d0	/Data/Resources/unity_builtin_extra#Hidden/Internal-DeferredShading#var19.22
+ps_romfs.bin	95	pixel	43d19793ac5f5a94	/Data/Resources/unity_builtin_extra#Hidden/Internal-DeferredShading#var19.23
+vs_romfs.bin	95	vertex	b31adc55bcaee76e	/Data/Resources/unity_builtin_extra#Hidden/Internal-DeferredShading#var19.23
+vs_romfs.bin	96	vertex	720d0c729767a511	/Data/Resources/unity_builtin_extra#Hidden/Internal-DeferredShading#var19.24
+ps_romfs.bin	96	pixel	db789d1566014eaf	/Data/Resources/unity_builtin_extra#Hidden/Internal-DeferredShading#var19.24
+vs_romfs.bin	97	vertex	a90cf8719da0ad1c	/Data/Resources/unity_builtin_extra#Hidden/Internal-DeferredShading#var19.25
+ps_romfs.bin	97	pixel	ec0b7648ff640ccf	/Data/Resources/unity_builtin_extra#Hidden/Internal-DeferredShading#var19.25
+vs_romfs.bin	98	vertex	391c2cdc2526c3bb	/Data/Resources/unity_builtin_extra#Hidden/Internal-DeferredShading#var19.26
+ps_romfs.bin	98	pixel	3964cbfa42975035	/Data/Resources/unity_builtin_extra#Hidden/Internal-DeferredShading#var19.26
+vs_romfs.bin	99	vertex	2c00647ec226c24e	/Data/Resources/unity_builtin_extra#Hidden/Internal-DeferredShading#var19.27
+ps_romfs.bin	99	pixel	b79569b5a88d7a8d	/Data/Resources/unity_builtin_extra#Hidden/Internal-DeferredShading#var19.27
+vs_romfs.bin	100	vertex	29ca5f4e25b3f16a	/Data/Resources/unity_builtin_extra#Hidden/Internal-DeferredShading#var19.28
+ps_romfs.bin	100	pixel	ace5770c38b27a35	/Data/Resources/unity_builtin_extra#Hidden/Internal-DeferredShading#var19.28
+vs_romfs.bin	101	vertex	31e4f3778b0ca8ca	/Data/Resources/unity_builtin_extra#Hidden/Internal-DeferredShading#var19.29
+ps_romfs.bin	101	pixel	957ad15b2abe461c	/Data/Resources/unity_builtin_extra#Hidden/Internal-DeferredShading#var19.29
+vs_romfs.bin	102	vertex	4c9cbb0510aa020e	/Data/Resources/unity_builtin_extra#Hidden/Internal-DeferredShading#var19.30
+ps_romfs.bin	102	pixel	5021de937968a0ed	/Data/Resources/unity_builtin_extra#Hidden/Internal-DeferredShading#var19.30
+vs_romfs.bin	103	vertex	0dd1de49690d200f	/Data/Resources/unity_builtin_extra#Hidden/Internal-DeferredShading#var19.31
+ps_romfs.bin	103	pixel	f2dacdc6e87f18ea	/Data/Resources/unity_builtin_extra#Hidden/Internal-DeferredShading#var19.31
+vs_romfs.bin	104	vertex	72a8297b871eac85	/Data/Resources/unity_builtin_extra#Hidden/Internal-DeferredShading#var19.32
+ps_romfs.bin	104	pixel	b4af6dec162400a8	/Data/Resources/unity_builtin_extra#Hidden/Internal-DeferredShading#var19.32
+vs_romfs.bin	105	vertex	4394697459609959	/Data/Resources/unity_builtin_extra#Hidden/Internal-DeferredShading#var19.33
+ps_romfs.bin	105	pixel	8a11845fa86fe180	/Data/Resources/unity_builtin_extra#Hidden/Internal-DeferredShading#var19.33
+ps_romfs.bin	106	pixel	1c98dbd2d3ad6fa7	/Data/Resources/unity_builtin_extra#Hidden/Internal-DeferredShading#var19.34
+vs_romfs.bin	106	vertex	eb6e71f7e5ada77c	/Data/Resources/unity_builtin_extra#Hidden/Internal-DeferredShading#var19.34
+vs_romfs.bin	107	vertex	05bd0526a90fd9cc	/Data/Resources/unity_builtin_extra#Hidden/Internal-DeferredShading#var19.35
+ps_romfs.bin	107	pixel	b2c73d5ef5aa306a	/Data/Resources/unity_builtin_extra#Hidden/Internal-DeferredShading#var19.35
+vs_romfs.bin	108	vertex	60cf14ae37eff028	/Data/Resources/unity_builtin_extra#Hidden/Internal-DeferredShading#var19.36
+ps_romfs.bin	108	pixel	e35b33b0c32dc60e	/Data/Resources/unity_builtin_extra#Hidden/Internal-DeferredShading#var19.36
+vs_romfs.bin	109	vertex	30fd0ad30f1a9746	/Data/Resources/unity_builtin_extra#Hidden/Internal-DeferredShading#var19.38
+ps_romfs.bin	109	pixel	375023c03d983ad4	/Data/Resources/unity_builtin_extra#Hidden/Internal-DeferredShading#var19.38
+ps_romfs.bin	110	pixel	21398b7ac74516fb	/Data/Resources/unity_builtin_extra#Hidden/Internal-DepthNormalsTexture#var19.1
+vs_romfs.bin	110	vertex	b579e3e7acab1a2c	/Data/Resources/unity_builtin_extra#Hidden/Internal-DepthNormalsTexture#var19.1
+ps_romfs.bin	111	pixel	d8459b8b5398fa5b	/Data/Resources/unity_builtin_extra#Hidden/Internal-DepthNormalsTexture#var19.11
+vs_romfs.bin	111	vertex	dedc36d56ebe3c56	/Data/Resources/unity_builtin_extra#Hidden/Internal-DepthNormalsTexture#var19.11
+vs_romfs.bin	112	vertex	c658a8e2402c8084	/Data/Resources/unity_builtin_extra#Hidden/Internal-DepthNormalsTexture#var19.12
+ps_romfs.bin	112	pixel	e6e12a22ce128a78	/Data/Resources/unity_builtin_extra#Hidden/Internal-DepthNormalsTexture#var19.12
+vs_romfs.bin	113	vertex	93c66d1fb53e3c99	/Data/Resources/unity_builtin_extra#Hidden/Internal-DepthNormalsTexture#var19.14
+ps_romfs.bin	113	pixel	d513dc2d6c76a899	/Data/Resources/unity_builtin_extra#Hidden/Internal-DepthNormalsTexture#var19.14
+ps_romfs.bin	114	pixel	a60f58ca253e9a09	/Data/Resources/unity_builtin_extra#Hidden/Internal-DepthNormalsTexture#var19.15
+vs_romfs.bin	114	vertex	d6f8f3f4ea5be1d5	/Data/Resources/unity_builtin_extra#Hidden/Internal-DepthNormalsTexture#var19.15
+vs_romfs.bin	115	vertex	75085a7e3217fba3	/Data/Resources/unity_builtin_extra#Hidden/Internal-DepthNormalsTexture#var19.17
+ps_romfs.bin	115	pixel	f9cc49135cb00615	/Data/Resources/unity_builtin_extra#Hidden/Internal-DepthNormalsTexture#var19.17
+ps_romfs.bin	116	pixel	73d8491a1f1cc3c6	/Data/Resources/unity_builtin_extra#Hidden/Internal-DepthNormalsTexture#var19.3
+vs_romfs.bin	116	vertex	d037c13f2b1bbad4	/Data/Resources/unity_builtin_extra#Hidden/Internal-DepthNormalsTexture#var19.3
+ps_romfs.bin	117	pixel	7d6ad4d232397206	/Data/Resources/unity_builtin_extra#Hidden/Internal-DepthNormalsTexture#var19.5
+vs_romfs.bin	117	vertex	d13228ec863fe42e	/Data/Resources/unity_builtin_extra#Hidden/Internal-DepthNormalsTexture#var19.5
+vs_romfs.bin	118	vertex	2937f7cba19b8019	/Data/Resources/unity_builtin_extra#Hidden/Internal-DepthNormalsTexture#var19.7
+ps_romfs.bin	118	pixel	71bd21d23ce50253	/Data/Resources/unity_builtin_extra#Hidden/Internal-DepthNormalsTexture#var19.7
+vs_romfs.bin	119	vertex	64895ffedc213244	/Data/Resources/unity_builtin_extra#Hidden/Internal-DepthNormalsTexture#var19.9
+ps_romfs.bin	119	pixel	92c657a510f3411c	/Data/Resources/unity_builtin_extra#Hidden/Internal-DepthNormalsTexture#var19.9
+ps_romfs.bin	120	pixel	4a0b371d1577266a	/Data/Resources/unity_builtin_extra#Hidden/Internal-Flare#var19.1
+vs_romfs.bin	120	vertex	c9382b80d89760a1	/Data/Resources/unity_builtin_extra#Hidden/Internal-Flare#var19.1
+vs_romfs.bin	121	vertex	57239f14db499c7c	/Data/Resources/unity_builtin_extra#Hidden/Internal-GUIRoundedRect#var19.1
+ps_romfs.bin	121	pixel	dc3f4144ccb2b7c5	/Data/Resources/unity_builtin_extra#Hidden/Internal-GUIRoundedRect#var19.1
+vs_romfs.bin	122	vertex	b9107c01ef1aa2d2	/Data/Resources/unity_builtin_extra#Hidden/Internal-GUIRoundedRect#var19.2
+ps_romfs.bin	122	pixel	cecf1bbebf66e96a	/Data/Resources/unity_builtin_extra#Hidden/Internal-GUIRoundedRect#var19.2
+vs_romfs.bin	123	vertex	b9bb2d3f07cd09e1	/Data/Resources/unity_builtin_extra#Hidden/Internal-GUIRoundedRectWithColorPerBorder#var19.1
+ps_romfs.bin	123	pixel	bec807b12fad6da6	/Data/Resources/unity_builtin_extra#Hidden/Internal-GUIRoundedRectWithColorPerBorder#var19.1
+ps_romfs.bin	124	pixel	24b17f34563cb8bc	/Data/Resources/unity_builtin_extra#Hidden/Internal-GUIRoundedRectWithColorPerBorder#var19.2
+vs_romfs.bin	124	vertex	ab96135ee99dbcd7	/Data/Resources/unity_builtin_extra#Hidden/Internal-GUIRoundedRectWithColorPerBorder#var19.2
+vs_romfs.bin	125	vertex	cadf6073634f59ea	/Data/Resources/unity_builtin_extra#Hidden/Internal-GUITexture#var19.1
+ps_romfs.bin	125	pixel	d4704e650ea888dc	/Data/Resources/unity_builtin_extra#Hidden/Internal-GUITexture#var19.1
+vs_romfs.bin	126	vertex	2b54148092515333	/Data/Resources/unity_builtin_extra#Hidden/Internal-GUITexture#var19.2
+ps_romfs.bin	126	pixel	a20c92144eb8a9b4	/Data/Resources/unity_builtin_extra#Hidden/Internal-GUITexture#var19.2
+ps_romfs.bin	127	pixel	9e27007792246336	/Data/Resources/unity_builtin_extra#Hidden/Internal-GUITextureBlit#var19.1
+vs_romfs.bin	127	vertex	db497dac5e128dd2	/Data/Resources/unity_builtin_extra#Hidden/Internal-GUITextureBlit#var19.1
+vs_romfs.bin	128	vertex	18beb494faa09dc7	/Data/Resources/unity_builtin_extra#Hidden/Internal-GUITextureBlit#var19.2
+ps_romfs.bin	128	pixel	7f7c46a6f8a0bffb	/Data/Resources/unity_builtin_extra#Hidden/Internal-GUITextureBlit#var19.2
+ps_romfs.bin	129	pixel	2918217e9abf0131	/Data/Resources/unity_builtin_extra#Hidden/Internal-GUITextureClip#var19.1
+vs_romfs.bin	129	vertex	7528683c0f2a1d3d	/Data/Resources/unity_builtin_extra#Hidden/Internal-GUITextureClip#var19.1
+ps_romfs.bin	130	pixel	d0816878bbcf6e64	/Data/Resources/unity_builtin_extra#Hidden/Internal-GUITextureClip#var19.2
+vs_romfs.bin	130	vertex	d4fb23c4770aa315	/Data/Resources/unity_builtin_extra#Hidden/Internal-GUITextureClip#var19.2
+vs_romfs.bin	131	vertex	cbd152a46c5ffa70	/Data/Resources/unity_builtin_extra#Hidden/Internal-GUITextureClipText#var19.1
+ps_romfs.bin	131	pixel	eed7b230544b3cf8	/Data/Resources/unity_builtin_extra#Hidden/Internal-GUITextureClipText#var19.1
+vs_romfs.bin	132	vertex	2d2b1125c2b6ac9b	/Data/Resources/unity_builtin_extra#Hidden/Internal-GUITextureClipText#var19.2
+ps_romfs.bin	132	pixel	586892d3d9a458b5	/Data/Resources/unity_builtin_extra#Hidden/Internal-GUITextureClipText#var19.2
+ps_romfs.bin	133	pixel	9ef43245d2da1f30	/Data/Resources/unity_builtin_extra#Hidden/Internal-Halo#var19.1
+vs_romfs.bin	133	vertex	d03308856e1db9a9	/Data/Resources/unity_builtin_extra#Hidden/Internal-Halo#var19.1
+vs_romfs.bin	134	vertex	6bdc00e20aebf7f8	/Data/Resources/unity_builtin_extra#Hidden/Internal-MotionVectors#var19.1
+ps_romfs.bin	134	pixel	c2105127fb5aab4a	/Data/Resources/unity_builtin_extra#Hidden/Internal-MotionVectors#var19.1
+vs_romfs.bin	135	vertex	c0cb4b4b5673a2e1	/Data/Resources/unity_builtin_extra#Hidden/Internal-MotionVectors#var19.3
+ps_romfs.bin	135	pixel	c434c325223a42a2	/Data/Resources/unity_builtin_extra#Hidden/Internal-MotionVectors#var19.3
+vs_romfs.bin	136	vertex	b33ee8ac7fcbf55e	/Data/Resources/unity_builtin_extra#Hidden/Internal-MotionVectors#var19.4
+ps_romfs.bin	136	pixel	d2a0e4f215e1d679	/Data/Resources/unity_builtin_extra#Hidden/Internal-MotionVectors#var19.4
+vs_romfs.bin	137	vertex	00157a0cb92cf176	/Data/Resources/unity_builtin_extra#Hidden/Internal-ODSWorldTexture#var19.1
+ps_romfs.bin	137	pixel	85067bb321dbcbac	/Data/Resources/unity_builtin_extra#Hidden/Internal-ODSWorldTexture#var19.1
+ps_romfs.bin	138	pixel	30236b534e552d51	/Data/Resources/unity_builtin_extra#Hidden/Internal-ODSWorldTexture#var19.11
+vs_romfs.bin	138	vertex	878a93a0864ed065	/Data/Resources/unity_builtin_extra#Hidden/Internal-ODSWorldTexture#var19.11
+ps_romfs.bin	139	pixel	81fddad1bcdff932	/Data/Resources/unity_builtin_extra#Hidden/Internal-ODSWorldTexture#var19.12
+vs_romfs.bin	139	vertex	f823ca8838243434	/Data/Resources/unity_builtin_extra#Hidden/Internal-ODSWorldTexture#var19.12
+vs_romfs.bin	140	vertex	4507ba5114a5d144	/Data/Resources/unity_builtin_extra#Hidden/Internal-ODSWorldTexture#var19.13
+ps_romfs.bin	140	pixel	56030a2bb669630e	/Data/Resources/unity_builtin_extra#Hidden/Internal-ODSWorldTexture#var19.13
+vs_romfs.bin	141	vertex	6f72530f6bc0bea2	/Data/Resources/unity_builtin_extra#Hidden/Internal-ODSWorldTexture#var19.15
+ps_romfs.bin	141	pixel	f9a5341d98763a7d	/Data/Resources/unity_builtin_extra#Hidden/Internal-ODSWorldTexture#var19.15
+vs_romfs.bin	142	vertex	686d97de3dc94099	/Data/Resources/unity_builtin_extra#Hidden/Internal-ODSWorldTexture#var19.17
+ps_romfs.bin	142	pixel	cce372305adcbb9f	/Data/Resources/unity_builtin_extra#Hidden/Internal-ODSWorldTexture#var19.17
+ps_romfs.bin	143	pixel	cf523fd3ccd5f58d	/Data/Resources/unity_builtin_extra#Hidden/Internal-ODSWorldTexture#var19.3
+vs_romfs.bin	143	vertex	e3cd5319bf1e76d9	/Data/Resources/unity_builtin_extra#Hidden/Internal-ODSWorldTexture#var19.3
+ps_romfs.bin	144	pixel	40fefb77088e04e4	/Data/Resources/unity_builtin_extra#Hidden/Internal-ODSWorldTexture#var19.5
+vs_romfs.bin	144	vertex	5d2e5acaadbeab34	/Data/Resources/unity_builtin_extra#Hidden/Internal-ODSWorldTexture#var19.5
+vs_romfs.bin	145	vertex	2628b0c4cfc5a249	/Data/Resources/unity_builtin_extra#Hidden/Internal-ODSWorldTexture#var19.7
+ps_romfs.bin	145	pixel	558f4848b5124ca6	/Data/Resources/unity_builtin_extra#Hidden/Internal-ODSWorldTexture#var19.7
+vs_romfs.bin	146	vertex	659b81c445235dd9	/Data/Resources/unity_builtin_extra#Hidden/Internal-ODSWorldTexture#var19.9
+ps_romfs.bin	146	pixel	9ff4bf059c68be12	/Data/Resources/unity_builtin_extra#Hidden/Internal-ODSWorldTexture#var19.9
+ps_romfs.bin	147	pixel	9eac83b97f3bf45e	/Data/Resources/unity_builtin_extra#Hidden/Internal-ScreenSpaceShadows#var19.10
+vs_romfs.bin	147	vertex	f8021d46b8fe95e7	/Data/Resources/unity_builtin_extra#Hidden/Internal-ScreenSpaceShadows#var19.10
+vs_romfs.bin	148	vertex	7c5eca1262b57ba7	/Data/Resources/unity_builtin_extra#Hidden/Internal-ScreenSpaceShadows#var19.11
+ps_romfs.bin	148	pixel	99e4b03a275d065e	/Data/Resources/unity_builtin_extra#Hidden/Internal-ScreenSpaceShadows#var19.11
+ps_romfs.bin	149	pixel	2824950929a61864	/Data/Resources/unity_builtin_extra#Hidden/Internal-ScreenSpaceShadows#var19.12
+vs_romfs.bin	149	vertex	496321919818f457	/Data/Resources/unity_builtin_extra#Hidden/Internal-ScreenSpaceShadows#var19.12
+vs_romfs.bin	150	vertex	bcaf75ad391524d3	/Data/Resources/unity_builtin_extra#Hidden/Internal-ScreenSpaceShadows#var19.13
+ps_romfs.bin	150	pixel	dea6bf2568378af1	/Data/Resources/unity_builtin_extra#Hidden/Internal-ScreenSpaceShadows#var19.13
+vs_romfs.bin	151	vertex	0fa7f2c62dba8b74	/Data/Resources/unity_builtin_extra#Hidden/Internal-ScreenSpaceShadows#var19.17
+ps_romfs.bin	151	pixel	660c92265c042527	/Data/Resources/unity_builtin_extra#Hidden/Internal-ScreenSpaceShadows#var19.17
+ps_romfs.bin	152	pixel	a1735c0518f31590	/Data/Resources/unity_builtin_extra#Hidden/Internal-ScreenSpaceShadows#var19.18
+vs_romfs.bin	152	vertex	d3074b441e96a4c8	/Data/Resources/unity_builtin_extra#Hidden/Internal-ScreenSpaceShadows#var19.18
+ps_romfs.bin	153	pixel	ac0a13b25a800aa7	/Data/Resources/unity_builtin_extra#Hidden/Internal-ScreenSpaceShadows#var19.19
+vs_romfs.bin	153	vertex	aeb285f9b6242ff7	/Data/Resources/unity_builtin_extra#Hidden/Internal-ScreenSpaceShadows#var19.19
+vs_romfs.bin	154	vertex	8d83bad348691268	/Data/Resources/unity_builtin_extra#Hidden/Internal-ScreenSpaceShadows#var19.20
+ps_romfs.bin	154	pixel	e919e552a41369e7	/Data/Resources/unity_builtin_extra#Hidden/Internal-ScreenSpaceShadows#var19.20
+ps_romfs.bin	155	pixel	df78b79fb34f1baf	/Data/Resources/unity_builtin_extra#Hidden/Internal-ScreenSpaceShadows#var19.24
+vs_romfs.bin	155	vertex	f03f92e9acc416c8	/Data/Resources/unity_builtin_extra#Hidden/Internal-ScreenSpaceShadows#var19.24
+vs_romfs.bin	156	vertex	44146084c8c47b36	/Data/Resources/unity_builtin_extra#Hidden/Internal-ScreenSpaceShadows#var19.25
+ps_romfs.bin	156	pixel	d995592a6261881b	/Data/Resources/unity_builtin_extra#Hidden/Internal-ScreenSpaceShadows#var19.25
+vs_romfs.bin	157	vertex	a8ab1c020d19ab34	/Data/Resources/unity_builtin_extra#Hidden/Internal-ScreenSpaceShadows#var19.26
+ps_romfs.bin	157	pixel	cea612437e6bbedd	/Data/Resources/unity_builtin_extra#Hidden/Internal-ScreenSpaceShadows#var19.26
+ps_romfs.bin	158	pixel	9e6d9816707bf1a8	/Data/Resources/unity_builtin_extra#Hidden/Internal-ScreenSpaceShadows#var19.27
+vs_romfs.bin	158	vertex	af509f84d24dcba3	/Data/Resources/unity_builtin_extra#Hidden/Internal-ScreenSpaceShadows#var19.27
+vs_romfs.bin	159	vertex	4709333d63c5e7b0	/Data/Resources/unity_builtin_extra#Hidden/Internal-ScreenSpaceShadows#var19.3
+ps_romfs.bin	159	pixel	692d55777046ae8d	/Data/Resources/unity_builtin_extra#Hidden/Internal-ScreenSpaceShadows#var19.3
+ps_romfs.bin	160	pixel	0098d97aa0bab969	/Data/Resources/unity_builtin_extra#Hidden/Internal-ScreenSpaceShadows#var19.4
+vs_romfs.bin	160	vertex	d2695b21edd8dcf7	/Data/Resources/unity_builtin_extra#Hidden/Internal-ScreenSpaceShadows#var19.4
+ps_romfs.bin	161	pixel	5572eadccab68cb4	/Data/Resources/unity_builtin_extra#Hidden/Internal-ScreenSpaceShadows#var19.5
+vs_romfs.bin	161	vertex	9da0f3155300763c	/Data/Resources/unity_builtin_extra#Hidden/Internal-ScreenSpaceShadows#var19.5
+ps_romfs.bin	162	pixel	947fa5c36f000b0d	/Data/Resources/unity_builtin_extra#Hidden/Internal-ScreenSpaceShadows#var19.6
+vs_romfs.bin	162	vertex	960d8b1dc5eb0186	/Data/Resources/unity_builtin_extra#Hidden/Internal-ScreenSpaceShadows#var19.6
+vs_romfs.bin	163	vertex	68bbb0357f77565d	/Data/Resources/unity_builtin_extra#Hidden/Internal-StencilWrite#var19.1
+ps_romfs.bin	163	pixel	748872ab66e989b5	/Data/Resources/unity_builtin_extra#Hidden/Internal-StencilWrite#var19.1
+vs_romfs.bin	164	vertex	12a2f3cb66724332	/Data/Resources/unity_builtin_extra#Hidden/Internal-UIRAtlasBlitCopy#var19.1
+ps_romfs.bin	164	pixel	90b322d1dff46f60	/Data/Resources/unity_builtin_extra#Hidden/Internal-UIRAtlasBlitCopy#var19.1
+ps_romfs.bin	165	pixel	059bbcfdb25d11c3	/Data/Resources/unity_builtin_extra#Hidden/Internal-UIRDefault#var19.1
+vs_romfs.bin	165	vertex	ed57a31b7ab3eb20	/Data/Resources/unity_builtin_extra#Hidden/Internal-UIRDefault#var19.1
+vs_romfs.bin	166	vertex	50a38e1c6737aadd	/Data/Resources/unity_builtin_extra#Hidden/Internal-UIRDefault#var19.3
+ps_romfs.bin	166	pixel	be9938bebac7691a	/Data/Resources/unity_builtin_extra#Hidden/Internal-UIRDefault#var19.3
+vs_romfs.bin	167	vertex	1bc8575aa62f7405	/Data/Resources/unity_builtin_extra#Hidden/Internal-UIRDefaultWorld#var19.1
+ps_romfs.bin	167	pixel	87e889d3fc1e83f6	/Data/Resources/unity_builtin_extra#Hidden/Internal-UIRDefaultWorld#var19.1
+vs_romfs.bin	168	vertex	4dfa7bf6b15b04af	/Data/Resources/unity_builtin_extra#Hidden/Internal-UIRDefaultWorld#var19.3
+ps_romfs.bin	168	pixel	d001718a07213705	/Data/Resources/unity_builtin_extra#Hidden/Internal-UIRDefaultWorld#var19.3
+vs_romfs.bin	169	vertex	a68fd0dfbe24ffc9	/Data/Resources/unity_builtin_extra#Hidden/TextCore/Distance Field SSD#var19.1
+ps_romfs.bin	169	pixel	ef8c6f4f060b9ab8	/Data/Resources/unity_builtin_extra#Hidden/TextCore/Distance Field SSD#var19.1
+vs_romfs.bin	170	vertex	4d7c460f7219df0b	/Data/Resources/unity_builtin_extra#Hidden/VR/BlitFromTex2DToTexArraySlice#var19.1
+ps_romfs.bin	170	pixel	c61af91f22856e91	/Data/Resources/unity_builtin_extra#Hidden/VR/BlitFromTex2DToTexArraySlice#var19.1
+ps_romfs.bin	171	pixel	3547bd32d8238a43	/Data/Resources/unity_builtin_extra#Hidden/VR/BlitFromTex2DToTexArraySlice#var19.3
+vs_romfs.bin	171	vertex	a2e9e19b68b01e9e	/Data/Resources/unity_builtin_extra#Hidden/VR/BlitFromTex2DToTexArraySlice#var19.3
+gs_romfs.bin	0	geometry	fed2ad8f9ff1701d	/Data/Resources/unity_builtin_extra#Hidden/VR/BlitFromTex2DToTexArraySlice#var19.3
+ps_romfs.bin	172	pixel	8203f76875206efd	/Data/Resources/unity_builtin_extra#Hidden/VR/BlitTexArraySlice#var19.1
+vs_romfs.bin	172	vertex	f525620fe9ea9865	/Data/Resources/unity_builtin_extra#Hidden/VR/BlitTexArraySlice#var19.1
+ps_romfs.bin	173	pixel	239720512ee60391	/Data/Resources/unity_builtin_extra#Hidden/VideoComposite#var19.1
+vs_romfs.bin	173	vertex	27fac4c37abc4be9	/Data/Resources/unity_builtin_extra#Hidden/VideoComposite#var19.1
+ps_romfs.bin	174	pixel	2f61aead9e89e452	/Data/Resources/unity_builtin_extra#Hidden/VideoDecode#var19.1
+vs_romfs.bin	174	vertex	b15b9fe045341d20	/Data/Resources/unity_builtin_extra#Hidden/VideoDecode#var19.1
+vs_romfs.bin	175	vertex	9edf7f73a8edbaa8	/Data/Resources/unity_builtin_extra#Hidden/VideoDecode#var19.10
+ps_romfs.bin	175	pixel	dc0e30a94443f9df	/Data/Resources/unity_builtin_extra#Hidden/VideoDecode#var19.10
+ps_romfs.bin	176	pixel	e9aec56be9b1977d	/Data/Resources/unity_builtin_extra#Hidden/VideoDecode#var19.12
+vs_romfs.bin	176	vertex	fe353a0bb3d4bd24	/Data/Resources/unity_builtin_extra#Hidden/VideoDecode#var19.12
+ps_romfs.bin	177	pixel	041a2c0ec4fe7cd1	/Data/Resources/unity_builtin_extra#Hidden/VideoDecode#var19.13
+vs_romfs.bin	177	vertex	f5c7b95c403c1b95	/Data/Resources/unity_builtin_extra#Hidden/VideoDecode#var19.13
+ps_romfs.bin	178	pixel	9658b754a8f60216	/Data/Resources/unity_builtin_extra#Hidden/VideoDecode#var19.15
+vs_romfs.bin	178	vertex	9dbb26fdf31b5ea2	/Data/Resources/unity_builtin_extra#Hidden/VideoDecode#var19.15
+vs_romfs.bin	179	vertex	797f78af6b2c31be	/Data/Resources/unity_builtin_extra#Hidden/VideoDecode#var19.16
+ps_romfs.bin	179	pixel	7b35597742b2bc02	/Data/Resources/unity_builtin_extra#Hidden/VideoDecode#var19.16
+ps_romfs.bin	180	pixel	63a33d8d00269b7c	/Data/Resources/unity_builtin_extra#Hidden/VideoDecode#var19.17
+vs_romfs.bin	180	vertex	da8e92bd17a34427	/Data/Resources/unity_builtin_extra#Hidden/VideoDecode#var19.17
+vs_romfs.bin	181	vertex	6f8e6f71c84c1bf5	/Data/Resources/unity_builtin_extra#Hidden/VideoDecode#var19.2
+ps_romfs.bin	181	pixel	9471a57abd988f0f	/Data/Resources/unity_builtin_extra#Hidden/VideoDecode#var19.2
+ps_romfs.bin	182	pixel	c177ff7f50483168	/Data/Resources/unity_builtin_extra#Hidden/VideoDecode#var19.3
+vs_romfs.bin	182	vertex	c5e25080dda706cd	/Data/Resources/unity_builtin_extra#Hidden/VideoDecode#var19.3
+vs_romfs.bin	183	vertex	0b8b421c773c8357	/Data/Resources/unity_builtin_extra#Hidden/VideoDecode#var19.4
+ps_romfs.bin	183	pixel	6a86c43e9ab9b82d	/Data/Resources/unity_builtin_extra#Hidden/VideoDecode#var19.4
+vs_romfs.bin	184	vertex	1ab0d96d5c8ba876	/Data/Resources/unity_builtin_extra#Hidden/VideoDecode#var19.5
+ps_romfs.bin	184	pixel	88c25b20b747c1dd	/Data/Resources/unity_builtin_extra#Hidden/VideoDecode#var19.5
+ps_romfs.bin	185	pixel	86c5343667fa56b5	/Data/Resources/unity_builtin_extra#Hidden/VideoDecode#var19.6
+vs_romfs.bin	185	vertex	d5688ae21bc7ea7c	/Data/Resources/unity_builtin_extra#Hidden/VideoDecode#var19.6
+vs_romfs.bin	186	vertex	3c886160e85b9142	/Data/Resources/unity_builtin_extra#Hidden/VideoDecode#var19.7
+ps_romfs.bin	186	pixel	f67c985f54feb5bf	/Data/Resources/unity_builtin_extra#Hidden/VideoDecode#var19.7
+vs_romfs.bin	187	vertex	6e0747275665e8ad	/Data/Resources/unity_builtin_extra#Hidden/VideoDecode#var19.8
+ps_romfs.bin	187	pixel	e01a49fde068b4ce	/Data/Resources/unity_builtin_extra#Hidden/VideoDecode#var19.8
+ps_romfs.bin	188	pixel	44666fb38ff81627	/Data/Resources/unity_builtin_extra#Hidden/VideoDecode#var19.9
+vs_romfs.bin	188	vertex	8f33c7e21271d74b	/Data/Resources/unity_builtin_extra#Hidden/VideoDecode#var19.9
+vs_romfs.bin	189	vertex	491251cdf1dafa93	/Data/Resources/unity_builtin_extra#Legacy Shaders/Diffuse#var19.10
+ps_romfs.bin	189	pixel	ddba1a23c075361c	/Data/Resources/unity_builtin_extra#Legacy Shaders/Diffuse#var19.10
+vs_romfs.bin	190	vertex	249dc6eb32d81265	/Data/Resources/unity_builtin_extra#Legacy Shaders/Diffuse#var19.11
+ps_romfs.bin	190	pixel	bef70d0de6a70253	/Data/Resources/unity_builtin_extra#Legacy Shaders/Diffuse#var19.11
+vs_romfs.bin	191	vertex	01b7e1aad8711c99	/Data/Resources/unity_builtin_extra#Legacy Shaders/Diffuse#var19.12
+ps_romfs.bin	191	pixel	a784b1aba03836d3	/Data/Resources/unity_builtin_extra#Legacy Shaders/Diffuse#var19.12
+vs_romfs.bin	192	vertex	771b8bfbfb8be859	/Data/Resources/unity_builtin_extra#Legacy Shaders/Diffuse#var19.13
+ps_romfs.bin	192	pixel	9d37e99e870d22b7	/Data/Resources/unity_builtin_extra#Legacy Shaders/Diffuse#var19.13
+vs_romfs.bin	193	vertex	322aca1c6700f2db	/Data/Resources/unity_builtin_extra#Legacy Shaders/Diffuse#var19.18
+ps_romfs.bin	193	pixel	c0df14f4ec2a7fc3	/Data/Resources/unity_builtin_extra#Legacy Shaders/Diffuse#var19.18
+ps_romfs.bin	194	pixel	381ee18c774c9b86	/Data/Resources/unity_builtin_extra#Legacy Shaders/Diffuse#var19.19
+vs_romfs.bin	194	vertex	9867eb9982d09e27	/Data/Resources/unity_builtin_extra#Legacy Shaders/Diffuse#var19.19
+vs_romfs.bin	195	vertex	2919832fbd5328ae	/Data/Resources/unity_builtin_extra#Legacy Shaders/Diffuse#var19.20
+ps_romfs.bin	195	pixel	8503d4a4372d60d8	/Data/Resources/unity_builtin_extra#Legacy Shaders/Diffuse#var19.20
+ps_romfs.bin	196	pixel	9f9e6701bc9127f4	/Data/Resources/unity_builtin_extra#Legacy Shaders/Diffuse#var19.21
+vs_romfs.bin	196	vertex	d1ae0b327d4714dd	/Data/Resources/unity_builtin_extra#Legacy Shaders/Diffuse#var19.21
+ps_romfs.bin	197	pixel	a35629cf7b9486f0	/Data/Resources/unity_builtin_extra#Legacy Shaders/Diffuse#var19.22
+vs_romfs.bin	197	vertex	a7b93aadd24ce00d	/Data/Resources/unity_builtin_extra#Legacy Shaders/Diffuse#var19.22
+ps_romfs.bin	198	pixel	cec64474929f1259	/Data/Resources/unity_builtin_extra#Legacy Shaders/Diffuse#var19.25
+vs_romfs.bin	198	vertex	f7fe57de227850fb	/Data/Resources/unity_builtin_extra#Legacy Shaders/Diffuse#var19.25
+ps_romfs.bin	199	pixel	00c87ca9e7e52117	/Data/Resources/unity_builtin_extra#Legacy Shaders/Diffuse#var19.26
+vs_romfs.bin	199	vertex	c0596bf0716179f2	/Data/Resources/unity_builtin_extra#Legacy Shaders/Diffuse#var19.26
+vs_romfs.bin	200	vertex	0d09ab0f8f36f17c	/Data/Resources/unity_builtin_extra#Legacy Shaders/Diffuse#var19.27
+ps_romfs.bin	200	pixel	facbca2ed42d3f85	/Data/Resources/unity_builtin_extra#Legacy Shaders/Diffuse#var19.27
+ps_romfs.bin	201	pixel	30c3490721efc5b2	/Data/Resources/unity_builtin_extra#Legacy Shaders/Diffuse#var19.28
+vs_romfs.bin	201	vertex	660a42e66ab95829	/Data/Resources/unity_builtin_extra#Legacy Shaders/Diffuse#var19.28
+ps_romfs.bin	202	pixel	4d25e6d5bf8e5a0e	/Data/Resources/unity_builtin_extra#Legacy Shaders/Diffuse#var19.6
+vs_romfs.bin	202	vertex	da809f7a8bbe7f3a	/Data/Resources/unity_builtin_extra#Legacy Shaders/Diffuse#var19.6
+ps_romfs.bin	203	pixel	86dd1ce17c9276ac	/Data/Resources/unity_builtin_extra#Legacy Shaders/Diffuse#var19.7
+vs_romfs.bin	203	vertex	fce212385e39e50f	/Data/Resources/unity_builtin_extra#Legacy Shaders/Diffuse#var19.7
+ps_romfs.bin	204	pixel	7161e69859c49b1e	/Data/Resources/unity_builtin_extra#Legacy Shaders/Diffuse#var19.8
+vs_romfs.bin	204	vertex	d75c5ff43ae1eea1	/Data/Resources/unity_builtin_extra#Legacy Shaders/Diffuse#var19.8
+vs_romfs.bin	205	vertex	eb486ca4632aa699	/Data/Resources/unity_builtin_extra#Legacy Shaders/Diffuse#var19.9
+ps_romfs.bin	205	pixel	f3257f6940ccaa6a	/Data/Resources/unity_builtin_extra#Legacy Shaders/Diffuse#var19.9
+ps_romfs.bin	206	pixel	2b747b232d3cddcb	/Data/Resources/unity_builtin_extra#Legacy Shaders/VertexLit#var19.10
+vs_romfs.bin	206	vertex	9132ac78bc2c4b93	/Data/Resources/unity_builtin_extra#Legacy Shaders/VertexLit#var19.10
+vs_romfs.bin	207	vertex	6b24393c3f1efbfa	/Data/Resources/unity_builtin_extra#Legacy Shaders/VertexLit#var19.3
+ps_romfs.bin	207	pixel	e20e8844f3dd43a7	/Data/Resources/unity_builtin_extra#Legacy Shaders/VertexLit#var19.3
+ps_romfs.bin	208	pixel	5806cb9f6f58f696	/Data/Resources/unity_builtin_extra#Legacy Shaders/VertexLit#var19.4
+vs_romfs.bin	208	vertex	e0739ea851db90a2	/Data/Resources/unity_builtin_extra#Legacy Shaders/VertexLit#var19.4
+ps_romfs.bin	209	pixel	7144948b5c9ecf49	/Data/Resources/unity_builtin_extra#Legacy Shaders/VertexLit#var19.5
+vs_romfs.bin	209	vertex	b284a5c81704aeeb	/Data/Resources/unity_builtin_extra#Legacy Shaders/VertexLit#var19.5
+vs_romfs.bin	210	vertex	7c2b97492a9e7f52	/Data/Resources/unity_builtin_extra#Legacy Shaders/VertexLit#var19.7
+ps_romfs.bin	210	pixel	ef5cc26dc8033c12	/Data/Resources/unity_builtin_extra#Legacy Shaders/VertexLit#var19.7
+vs_romfs.bin	211	vertex	909c3de5a3a5081a	/Data/Resources/unity_builtin_extra#Legacy Shaders/VertexLit#var19.9
+ps_romfs.bin	211	pixel	c7bacc7bc3954706	/Data/Resources/unity_builtin_extra#Legacy Shaders/VertexLit#var19.9
+vs_romfs.bin	212	vertex	36f024abf7eb6c69	/Data/Resources/unity_builtin_extra#Sprites/Mask#var19.2
+ps_romfs.bin	212	pixel	a7e694a7f692fbea	/Data/Resources/unity_builtin_extra#Sprites/Mask#var19.2
+ps_romfs.bin	213	pixel	acbb35382f56f89a	/Data/Resources/unity_builtin_extra#Sprites/Mask#var19.3
+vs_romfs.bin	213	vertex	f4eb171699fa22a3	/Data/Resources/unity_builtin_extra#Sprites/Mask#var19.3
+vs_romfs.bin	214	vertex	b8f694e1e8c46285	/Data/Resources/unity_builtin_extra#UI/Default#var19.2
+ps_romfs.bin	214	pixel	d8d06074edc3bf18	/Data/Resources/unity_builtin_extra#UI/Default#var19.2
+vs_romfs.bin	215	vertex	b756087dcfc0cb23	/Data/Resources/unity_builtin_extra#UI/Default#var19.3
+ps_romfs.bin	215	pixel	da6f3ca2dd599a8c	/Data/Resources/unity_builtin_extra#UI/Default#var19.3
+vs_romfs.bin	216	vertex	314257a93d22a2bd	/Data/Resources/unity_builtin_extra#UI/Default#var19.4
+ps_romfs.bin	216	pixel	f30b060c15221f8e	/Data/Resources/unity_builtin_extra#UI/Default#var19.4
+ps_romfs.bin	217	pixel	00899bea9efacdb4	/Data/Resources/unity_builtin_extra#UI/Default#var19.5
+vs_romfs.bin	217	vertex	a921f306f303cd77	/Data/Resources/unity_builtin_extra#UI/Default#var19.5
+vs_romfs.bin	218	vertex	70e50b4493d43dda	/Data/globalgamemanagers.assets#Sprites/Default#var19.2
+ps_romfs.bin	218	pixel	8ce9fc1fb4edbf57	/Data/globalgamemanagers.assets#Sprites/Default#var19.2
+vs_romfs.bin	219	vertex	38130e477c7f3951	/Data/globalgamemanagers.assets#Sprites/Default#var19.3
+ps_romfs.bin	219	pixel	6b49bae20cf12c0a	/Data/globalgamemanagers.assets#Sprites/Default#var19.3
+ps_romfs.bin	220	pixel	8551657725fcfc70	/Data/resources.assets#Alpha Masked/Sprites Alpha Masked - World Coords#var19.1
+vs_romfs.bin	220	vertex	e37366144f59617a	/Data/resources.assets#Alpha Masked/Sprites Alpha Masked - World Coords#var19.1
+vs_romfs.bin	221	vertex	04414e81166952ab	/Data/resources.assets#Alpha Masked/Sprites Alpha Masked - World Coords#var19.2
+ps_romfs.bin	221	pixel	6417866ceb5a93fe	/Data/resources.assets#Alpha Masked/Sprites Alpha Masked - World Coords#var19.2
+vs_romfs.bin	222	vertex	93eceaae0d150540	/Data/resources.assets#Alpha Masked/Unlit Alpha Masked - World Coords#var19.1
+ps_romfs.bin	222	pixel	b4ad7a071605de85	/Data/resources.assets#Alpha Masked/Unlit Alpha Masked - World Coords#var19.1
+ps_romfs.bin	223	pixel	1c9634fe37183f49	/Data/resources.assets#Hidden/EfficientBlur#var19.1
+vs_romfs.bin	223	vertex	9d261e99d1068809	/Data/resources.assets#Hidden/EfficientBlur#var19.1
+vs_romfs.bin	224	vertex	748859f2a1e40f30	/Data/resources.assets#Hidden/SoftMask#var19.1
+ps_romfs.bin	224	pixel	9d0eb860f12d302b	/Data/resources.assets#Hidden/SoftMask#var19.1
+vs_romfs.bin	225	vertex	37703ecfe61ffc95	/Data/resources.assets#Legacy Shaders/Particles/Additive#var19.2
+ps_romfs.bin	225	pixel	cfaccfe27f066630	/Data/resources.assets#Legacy Shaders/Particles/Additive#var19.2
+vs_romfs.bin	226	vertex	6c4be613e769cee7	/Data/resources.assets#Legacy Shaders/Particles/Additive#var19.3
+ps_romfs.bin	226	pixel	f78c9b348bf61fa2	/Data/resources.assets#Legacy Shaders/Particles/Additive#var19.3
+vs_romfs.bin	227	vertex	97d3d5899a2cd37a	/Data/resources.assets#Legacy Shaders/Particles/Alpha Blended Premultiply#var19.2
+ps_romfs.bin	227	pixel	c28d2a27abcad52f	/Data/resources.assets#Legacy Shaders/Particles/Alpha Blended Premultiply#var19.2
+ps_romfs.bin	228	pixel	6ba6b815d8e0e797	/Data/resources.assets#Legacy Shaders/Particles/Alpha Blended Premultiply#var19.3
+vs_romfs.bin	228	vertex	f36347f3f0c05bed	/Data/resources.assets#Legacy Shaders/Particles/Alpha Blended Premultiply#var19.3
+ps_romfs.bin	229	pixel	6a4591c39ca391e1	/Data/resources.assets#Legacy Shaders/Particles/Alpha Blended#var19.2
+vs_romfs.bin	229	vertex	91ae82a0e3bfecaf	/Data/resources.assets#Legacy Shaders/Particles/Alpha Blended#var19.2
+vs_romfs.bin	230	vertex	96855c2b7ab62ffc	/Data/resources.assets#Legacy Shaders/Particles/Alpha Blended#var19.3
+ps_romfs.bin	230	pixel	e1938a587390d5d7	/Data/resources.assets#Legacy Shaders/Particles/Alpha Blended#var19.3
+vs_romfs.bin	231	vertex	6d87a62a9224db37	/Data/resources.assets#Mobile/Particles/Additive#var19.1
+ps_romfs.bin	231	pixel	9e46f5f364f950f7	/Data/resources.assets#Mobile/Particles/Additive#var19.1
+ps_romfs.bin	232	pixel	7f394531f1530c1b	/Data/resources.assets#UI/Default-SoftMask#var19.1
+vs_romfs.bin	232	vertex	d3ea8ebe8030f5f6	/Data/resources.assets#UI/Default-SoftMask#var19.1
+vs_romfs.bin	233	vertex	8596e24f97b10a80	/Data/resources.assets#UI/Default-SoftMask#var19.2
+ps_romfs.bin	233	pixel	cf9063e587967469	/Data/resources.assets#UI/Default-SoftMask#var19.2
+vs_romfs.bin	234	vertex	eaa32c9503796a55	/Data/resources.assets#UI/Default-SoftMask#var19.3
+ps_romfs.bin	234	pixel	f9af370c5617c29a	/Data/resources.assets#UI/Default-SoftMask#var19.3
+ps_romfs.bin	235	pixel	446112b530703770	/Data/resources.assets#UI/Default-SoftMask#var19.4
+vs_romfs.bin	235	vertex	9a9fd403a141736b	/Data/resources.assets#UI/Default-SoftMask#var19.4
+ps_romfs.bin	236	pixel	c072dae41bb2a2fa	/Data/resources.assets#UI/TranslucentImage#var19.2
+vs_romfs.bin	236	vertex	e4fea292655ac565	/Data/resources.assets#UI/TranslucentImage#var19.2
+vs_romfs.bin	237	vertex	70dc02c2ccdc002b	/Data/resources.assets#UI/TranslucentImage#var19.3
+ps_romfs.bin	237	pixel	d84663a2f7ea3487	/Data/resources.assets#UI/TranslucentImage#var19.3
+ps_romfs.bin	238	pixel	437be24a1dc1bfe6	/Data/resources.assets#UI/TranslucentImage#var19.4
+vs_romfs.bin	238	vertex	b7e6b478762b0b24	/Data/resources.assets#UI/TranslucentImage#var19.4
+ps_romfs.bin	239	pixel	057cd78e76ad3165	/Data/resources.assets#UI/TranslucentImage#var19.5
+vs_romfs.bin	239	vertex	61dff0b1d373b519	/Data/resources.assets#UI/TranslucentImage#var19.5
+ps_romfs.bin	240	pixel	b5c4be95e1b0548b	/Data/resources.assets#Unlit/Texture#var19.1
+vs_romfs.bin	240	vertex	d444af7527ac847a	/Data/resources.assets#Unlit/Texture#var19.1
+ps_romfs.bin	241	pixel	4b456990955c2e09	/Data/resources.assets#Unlit/Transparent#var19.1
+vs_romfs.bin	241	vertex	7c2aece0f912341b	/Data/resources.assets#Unlit/Transparent#var19.1
+ps_romfs.bin	242	pixel	5b8ec9a0d61da94f	/Data/sharedassets0.assets#Skybox/Procedural#var19.3
+vs_romfs.bin	242	vertex	e6eaaf939689615c	/Data/sharedassets0.assets#Skybox/Procedural#var19.3
+vs_romfs.bin	243	vertex	9292080b91c1a26b	/Data/sharedassets0.assets#Skybox/Procedural#var19.4
+ps_romfs.bin	243	pixel	efe474a5b780293f	/Data/sharedassets0.assets#Skybox/Procedural#var19.4
+vs_romfs.bin	244	vertex	5e2df3e1567d91c8	/Data/sharedassets0.assets#Skybox/Procedural#var19.5
+ps_romfs.bin	244	pixel	a177cb235f5782e4	/Data/sharedassets0.assets#Skybox/Procedural#var19.5
+vs_romfs.bin	245	vertex	a6ccb5868176588a	/Data/sharedassets6.assets#Legacy Shaders/Particles/Multiply#var19.2
+ps_romfs.bin	245	pixel	c38653a6990819b0	/Data/sharedassets6.assets#Legacy Shaders/Particles/Multiply#var19.2
+vs_romfs.bin	246	vertex	cfeb0e4f75e67872	/Data/sharedassets6.assets#Legacy Shaders/Particles/Multiply#var19.3
+ps_romfs.bin	246	pixel	ee5951414dd8af84	/Data/sharedassets6.assets#Legacy Shaders/Particles/Multiply#var19.3

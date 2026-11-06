@@ -9,7 +9,21 @@ diff --git a/dm/ios/Sources/front_ios.m b/dm/ios/Sources/front_ios.m
  
  static CAMetalLayer *g_layer;
  static void front_ios_notify_setup(void);
-@@ -167,6 +168,9 @@
+@@ -151,7 +152,12 @@
+     const char *dev = front_ios_device_check();   // that first device: a GPU without BC textures is refused here, not at launch, so the launcher's HUD switch counts
+     if (dev) { [self showHint:[NSString stringWithFormat:@"This device is not supported.\n%s", dev]]; return; }   // the host does not start
+     self.fill = dm_picture_fill(getenv("DM_PICTURE_FIT"));
+-    if (self.fill) LOG("front end: picture Fill (DM_PICTURE_FIT=fill), the 16:9 picture covers the screen in landscape and its edges are cropped");
++    if (self.fill) LOG("front end: picture Fill (DM_PICTURE_FIT=fill), the picture covers the screen in landscape and its edges are cropped");
++    // The picture's shape (DmLayout.h dm_view_aspect): 16:9 unless DM_VIEW_ASPECT moved it. One line at start, so a screenshot's log
++    // says which layout produced it; the present side of the same route logs its own choice (nvn_mtl.m present_viewport).
++    { CGFloat ar = dm_view_aspect();
++      if (ar <= 0) LOG("front end: picture shape Full (DM_VIEW_ASPECT=full): the game's view is the whole screen, no letterbox here; the present fills the canvas only when DM_PRESENT_FIT says so or the game's ratio is within DM_PRESENT_FIT_TOL");
++      else if (fabs((double)ar - 16.0 / 9.0) > 1e-4) LOG("front end: picture shape %.4g:1 (DM_VIEW_ASPECT), fitted into the screen", (double)ar); }
+     self.view.clipsToBounds = YES;   // with Fill the game view is larger than the screen
+     self.view.window.traitOverrides.preferredContentSizeCategory = UIContentSizeCategorySmall;   // UIKit draws the in-game menu (GameMenu.swift) in this window: it keeps one compact text size over the game, whatever the system's text size
+     self.game = [[DmGameView alloc] initWithFrame:self.view.bounds];
+@@ -167,6 +173,9 @@
      [self.view setNeedsLayout]; [self.view layoutIfNeeded];
      UIApplication.sharedApplication.idleTimerDisabled = YES;
      tv_attach();   // a TV connected while the launcher showed

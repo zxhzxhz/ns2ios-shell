@@ -22,10 +22,16 @@ import sys
 TOPS = ('dm/tools', 'dm/gfx', 'dm/games', 'dm/host', 'dm/third_party')
 ALWAYS_SKIP = {'dm/gfx/tools/dmsh_xlate_bin', 'dm/gfx/tools/dmsh_chain.lock'}
 SKIP_NAMES = {'c1_full.tsv', 'cb_extent.tsv', 'dmsh_chain.h'}   # made per profile at build time, not sources
+# Profile files this fork takes from upstream but must keep a key in: the packer's Mac build compiles these games' Oodle /
+# LZ5 shader archives, and needs_mac_shaders is the fork's key for that (upstream never added it). Without this list every
+# sync silently dropped the five keys and the packer stopped building their shaders -- 599193e put them back once already.
+KEEP = {'dm/games/01004A4010FEA000/game.tsv', 'dm/games/01005270232F2000/game.tsv',
+        'dm/games/0100606026F12000/game.tsv', 'dm/games/01006C300E9F0000/game.tsv',
+        'dm/games/0100F43008C44000/game.tsv'}
 
 
 def ours(fork):
-    keep = set(ALWAYS_SKIP)
+    keep = set(ALWAYS_SKIP) | KEEP
     for line in open(os.path.join(fork, '.shell-overlay.txt'), encoding='utf-8'):
         if line[:1] in ('~', '+'):
             keep.add(line[1:].split('#')[0].strip().rstrip('/'))

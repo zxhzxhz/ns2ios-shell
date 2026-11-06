@@ -1,0 +1,42 @@
+# Provisional game profile (written on Windows from dm/games/profile_guess.py, not checked by hand)
+# ほの暮しの庭, SDK 20, from I:\APP\ns2ios-shell\workingdir\01001BA027DD8000_survey\raw
+
+# ---- Identity ----
+title_id	01001BA027DD8000
+program_id	01001BA027DD8000
+
+# ---- App ----
+name	ほの暮しの庭
+ipa	HonogurashiNoNiwa.ipa
+app_category	public.app-category.games
+
+# ---- Versions ----
+build	v393216	1.2.0	main=d370928b7b221e7155580a1360f6843e	sdk=190030518b5d64e5d87b84bc54661af9
+package	v393216
+shader_versions	v393216
+
+# ---- Files ----
+# every module main imports from
+modules	main sdk
+romfs_marker	data/map_1_00.dat
+zip_store	.dat:.nro:.metallib
+
+# ---- Graphics ----
+# Tried and did not help (off): the title screen's baked background is one 1920x1080 packaged ASTC texture (ser 475 in the run log) of which 690 KB
+# of the 1.31 MB storage is written, the rest left as whatever the pool held, and the GPU copy then shows a translucent magenta band over the house
+# in a different shape every launch (loading and logo screens are clean). DM_NVN_PKG_REUPLOAD=1 re-uploaded it on every bind and the band stayed, so
+# the content handed to the GPU is what the game itself wrote — see PITFALLS §44.6 for what was ruled out and what is left to look at.
+# pkg_reupload	on
+
+# ---- Memory ----
+# main sets a heap of at most the pool − 64 MB: a 3328 MB heap region
+mem_reserve	0x100000000
+mem_alias	0x10000000
+mem_stack	0x10000000
+app_pool	0xCD500000
+# the NPDM declares 0 MB of system resource: IsVirtualAddressMemoryEnabled is false, as on Horizon (Big Brain Academy: Brain vs. Brain sets a heap only then)
+sys_resource	0x0
+
+# ---- Shader split ----
+shader_groups	/data/=data /.nrr/=nrr /NmplDLL.nro=nro
+shader_note	ほの暮しの庭 shaders (provisional profile)

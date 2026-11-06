@@ -1,0 +1,41 @@
+# Provisional game profile (written on Windows from dm/games/profile_guess.py, not checked by hand)
+# Cadence of Hyrule, SDK 6, from I:\APP\ns2ios-shell\workingdir\01000B900D8B0000_pack\extract\v0
+
+# ---- Identity ----
+title_id	01000B900D8B0000
+program_id	01000B900D8B0000
+
+# ---- App ----
+name	Cadence of Hyrule
+ipa	CadenceofHyrule.ipa
+app_category	public.app-category.games
+
+# ---- Versions ----
+build	v0	1.0.0	main=b2c7c52e52fa468f67604cc145233427	subsdk0=305ef5b2e6cd40196faf6e42e21b222d	subsdk1=8d073b25b9abda677e6967cef9ef6070	sdk=b2872a7bcc589969fb7afb8e372414e4
+package	v0
+shader_versions	v0
+
+# ---- Files ----
+# every module main imports from
+modules	main subsdk0 subsdk1 sdk
+romfs_marker	sound_banks/Music.bank
+zip_store	.bank:.bffnt:.bin:.mp4:.metallib
+
+# ---- Memory ----
+# main sets a heap of at most the pool − 64 MB: a 3328 MB heap region
+mem_reserve	0x100000000
+mem_alias	0x10000000
+mem_stack	0x10000000
+app_pool	0xCD500000
+# The SDK sizes its heap as pool - used - 1 MB. The modules are 0x4E00000 (81.8 MB measured, bss 0), more than the 64 MB
+# default, so the 0xC9400000 request came back LimitReached and the game fell back to a 32 MB heap: its NVN memory pools
+# (64 + 64 + 128 MB) then had no storage and it crashed on the first null blend state (log of 2026-10-30:
+# SetHeapSize 0xc9400000 + modules 0x4e00000 > app pool 0xcd500000, three [RED] MemoryPoolInitialize, sig=11 in
+# h_nvnBlendStateSetDefaults). The rewritten modules rounded up to a 16 MB granule, as fill_mem_used() computes it.
+mem_used	0x5000000
+# the NPDM declares 0 MB of system resource: IsVirtualAddressMemoryEnabled is false, as on Horizon (Big Brain Academy: Brain vs. Brain sets a heap only then)
+sys_resource	0x0
+
+# ---- Shader split ----
+shader_groups	/pois/=pois /music/=music /luts_bin/=lutsbin /sound_banks/=soundbanks /shaders_bin/=shadersbin /fonts_bin/=fontsbin /video/=video /textures_bin/=texturesbin
+shader_note	Cadence of Hyrule shaders (provisional profile)

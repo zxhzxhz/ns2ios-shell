@@ -1,0 +1,35 @@
+# Provisional game profile (written on Windows from dm/games/profile_guess.py, not checked by hand)
+# Hatsune Miku Logic Paint S, SDK 18, from I:\APP\ns2ios-shell\workingdir\0100B4101459A000_pack\extract
+
+# ---- Identity ----
+title_id	0100B4101459A000
+program_id	0100B4101459A000
+
+# ---- App ----
+name	Hatsune Miku Logic Paint S
+ipa	HatsuneMikuLogicPaintS.ipa
+app_category	public.app-category.games
+
+# ---- Versions ----
+build	v393216	1.2.2	main=3be789b6cb1e38c6fa908072343cad5b	subsdk0=6b29d0c7a23a7c0bf7fb98699cc8bcb7	sdk=6075151627016eef437c1312f2e3ed56
+package	v393216
+shader_versions	v393216
+
+# ---- Files ----
+# every module main imports from
+modules	main subsdk0 sdk
+romfs_marker	Data/data.unity3d
+zip_store	.dat:.resource:.unity3d:.metallib
+
+# ---- Memory ----
+# the NPDM declares 16 MB of system resource (virtual address memory) and main sets a heap: a 5 GB block with a large alias region; the heap check sizes the heap region from the heap the game asks for
+mem_reserve	0x210000000
+mem_alias	0x1C0000000
+mem_stack	0x10000000
+app_pool	0xCD500000
+# the NPDM declares 16 MB of system resource
+sys_resource	0x1000000
+
+# ---- Shader split ----
+shader_groups	/Data/=data
+shader_note	Hatsune Miku Logic Paint S shaders (provisional profile)

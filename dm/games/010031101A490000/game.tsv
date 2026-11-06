@@ -1,0 +1,38 @@
+# Provisional game profile (written on Windows from dm/games/profile_guess.py, not checked by hand)
+# Phantom Breaker Battlegrounds Ultimate, SDK 16, from I:\APP\ns2ios-shell\workingdir\010031101A490000_pack\extract\v393216
+
+# ---- Identity ----
+title_id	010031101A490000
+program_id	010031101A490000
+
+# ---- App ----
+name	Phantom Breaker Battlegrounds Ultimate
+ipa	PhantomBreakerBattlegroundsUltimate.ipa
+app_category	public.app-category.games
+
+# ---- Versions ----
+build	v393216	1.04.2	main=fcf70477f662638000905bdb0962ff89	subsdk0=7c1a58cac01c4aa3935c6243f69cf0d3	sdk=835c229763ce5c1816a70f875bd70ccd
+package	v393216
+shader_versions	v393216
+
+# ---- Files ----
+# every module main imports from
+modules	main subsdk0 sdk
+romfs_marker	PBBGU\Content\Paks\PBBGU-Switch.ucas
+zip_store	.mp4:.nro:.pak:.ucas:.utoc:.metallib
+
+# ---- Memory ----
+# Unreal on an iPhone takes the 5 GB block proven on a phone (docs/reference/memory.md "Partitioning the guest block"):
+# nninitStartup's 62 GB engine region is cut by the rewriter (dm/tools/ue_region.py) to what the alias region has room
+# for, and its FMallocBinned3 by dm/tools/ue_malloc.py. The 256 MB the NPDM declares as system resource is kept.
+mem_reserve	0x140000000
+mem_alias	0x118000000
+mem_stack	0x10000000
+app_pool	0xCD500000
+# the NPDM declares 256 MB of system resource
+sys_resource	0x10000000
+
+# ---- Shader split ----
+# the decoded shader code archives: the engine's global shaders and the game's material shaders
+shader_groups	ShaderArchive-Global-=global ShaderArchive-=game
+shader_note	Phantom Breaker Battlegrounds Ultimate shaders (provisional profile)

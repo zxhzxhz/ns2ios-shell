@@ -1,0 +1,38 @@
+# Provisional game profile (written on Windows from dm/games/profile_guess.py, not checked by hand)
+# CRYSTAR, SDK 12, from I:\APP\ns2ios-shell\workingdir\0100E7B016778000_pack\extract\v131072
+
+# ---- Identity ----
+title_id	0100E7B016778000
+program_id	0100E7B016778000
+
+# ---- App ----
+name	CRYSTAR
+ipa	CRYSTAR.ipa
+app_category	public.app-category.games
+
+# ---- Versions ----
+build	v131072	1.0.2	main=7f7f16c0b6cb444e81281a1647c9e06b	subsdk0=434729719bfacada3bd0ed4842a10e55	sdk=dfa12b7019fffbe725fa4b4f1335988c
+package	v131072
+shader_versions	v131072
+
+# ---- Files ----
+# every module main imports from
+modules	main subsdk0 sdk
+romfs_marker	Data/StreamingAssets/Movie/Opening.mp4
+zip_store	.assets:.dat:.mp4:.ress:.metallib
+
+# ---- Memory ----
+# Unity IL2CPP: the 7 GB alias layout of 规矩 7 (profile_guess 4.375 GB runs the TLSF heap dry)
+mem_reserve	0x210000000
+mem_alias	0x1C0000000
+mem_stack	0x10000000
+app_pool	0xCD500000
+# the NPDM declares 16 MB of system resource
+sys_resource	0x1000000
+
+# the game asks for present interval 2 (30 fps, GPU 5.1 ms a frame): present one frame per display tick
+present_interval	display
+
+# ---- Shader split ----
+shader_groups	/Data/=data
+shader_note	CRYSTAR shaders (provisional profile)
