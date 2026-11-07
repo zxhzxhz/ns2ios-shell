@@ -1,7 +1,31 @@
 diff --git a/dm/gfx/nvn/nvn_mtl.m b/dm/gfx/nvn/nvn_mtl.m
 --- a/dm/gfx/nvn/nvn_mtl.m
 +++ b/dm/gfx/nvn/nvn_mtl.m
-@@ -35,6 +35,29 @@
+@@ -17,6 +17,23 @@
+ #if TARGET_OS_IPHONE
+ #include <os/proc.h>   // os_proc_available_memory: for the memory readout line
+ #endif
++// iOS 27 / macOS 27 added the content rectangle offsets to MTL4FXTemporalScaler. A build host whose SDK predates them has
++// no declaration for the property even though the system the app runs on does, and the @available(iOS 27, macOS 27, *)
++// path below then fails to compile ("property 'colorContentOffsetX' not found on object of type id<MTL4FXTemporalScaler>").
++// This private build declares them so the same source compiles against an older SDK; the @available guard is what keeps
++// them off a system that lacks the selectors.
++// The scaler is handled as id<MTL4FXTemporalScaler>, and a category on NSObject is not in that protocol's method list,
++// so the offsets get a protocol of their own and the object is cast to it where they are set.
++@protocol DMTemporalScalerOffsets <NSObject>
++@property (nonatomic, assign) NSUInteger colorContentOffsetX;
++@property (nonatomic, assign) NSUInteger colorContentOffsetY;
++@property (nonatomic, assign) NSUInteger depthContentOffsetX;
++@property (nonatomic, assign) NSUInteger depthContentOffsetY;
++@property (nonatomic, assign) NSUInteger motionContentOffsetX;
++@property (nonatomic, assign) NSUInteger motionContentOffsetY;
++@property (nonatomic, assign) NSUInteger outputOffsetX;
++@property (nonatomic, assign) NSUInteger outputOffsetY;
++@end
+ #include "nvn_mtl.h"
+ #include <mach/mach.h>
+ #include "nvn_obj.h"
+@@ -35,6 +52,29 @@
  #include "msl_image.h"
  #include "dmsh_chain.h"   // DMSH_CHAIN: the translation chain version of the B shader library expected by this source tree, one for every game (beside this file, tools/dmsh_chain.py --header)
  #include "game_profile.h"   // game profile constants (profile id, the profile's switches)
@@ -31,7 +55,7 @@ diff --git a/dm/gfx/nvn/nvn_mtl.m b/dm/gfx/nvn/nvn_mtl.m
  // Texture slot table per stage: 0-127 the combined handles (nvnCommandBufferBindTexture), 128-255 the separate texture binds (NVN_SEPTEX_SLOT0, nvn_obj.h)
  #define NTEX 256
  // The NVN driver's constant segments c0 and c2 (byte offsets, slot counts) and the binding kinds of the shader reflection have one definition, which the shader build reads too (dmsh_build.py through dmsh_abi.py)
-@@ -182,6 +205,15 @@
+@@ -182,6 +222,15 @@
      "indirect-count multi-draw", "texture readback", "texture copy t2t", "diagnostics", "snapshot ring", "upload batches", "upload slot", "encode thread drain", "uniform copy worker", "old-queue command buffer"};
  static _Atomic uint64_t g_ws_n[WS_N], g_ws_blk[WS_N], g_ws_ns[WS_N];
  static int ws_on(void) { static int v = -1; if (v < 0) { const char *e = getenv("DM_NVN_WAITS"); v = e && atoi(e) > 0; } return v; }
@@ -47,7 +71,7 @@ diff --git a/dm/gfx/nvn/nvn_mtl.m b/dm/gfx/nvn/nvn_mtl.m
  static inline uint64_t ws_t0(void) { return clock_gettime_nsec_np(CLOCK_UPTIME_RAW); }
  static inline void ws_put(int site, uint64_t t0, int blocked) {
      atomic_fetch_add_explicit(&g_ws_n[site], 1, memory_order_relaxed);
-@@ -1766,7 +1798,7 @@
+@@ -1766,7 +1815,7 @@
              free(l); uint64_t rec[2] = {sum, gpu_ticks()}; memcpy((void *)ops[i].addr, rec, sizeof rec);
          }
          else if (ops[i].kind == 4) mirror_rb_land(ops[i].vis);
@@ -56,7 +80,25 @@ diff --git a/dm/gfx/nvn/nvn_mtl.m b/dm/gfx/nvn/nvn_mtl.m
      }
      free(ops); seg_clk_put(sc); r->ops = NULL; r->sc = NULL;
      atomic_store(&r->claimed, 1);
-@@ -3448,7 +3480,7 @@
+@@ -2130,8 +2179,15 @@
+     // A write after the upload's stamp may have reached the copy but not the upload: then there is no copy to trust, and the next write re-uploads as before
+     if (nvn_dirty_since_span(pk->span, t->mem, t->L.size, pk->stamp)) for (int i = 0; i < 2; i++) { free(pk->edge[i]); pk->edge[i] = NULL; pk->edge_n[i] = 0; }
+ }
+-static int pkg_edges_clean(NvPkg *pk, const tex_t *t) {   // the covered pages were written since the upload: 1 = only edge pages, and the texture's bytes there are as uploaded
+-    if (!pk->edge_n[0] && !pk->edge_n[1]) return 0;
++// DM_NVN_PKG_REUPLOAD=1 (off by default): upload a packaged texture again on every bind even when its pages look unchanged — for a game whose
++// texels are written after the texture's first use into pages this tracker does not see, which leaves the GPU copy stale for the rest of the run
++// (ほの暮しの庭: a translucent magenta band on the title screen, a different shape every launch, while the loading and logo screens are clean).
++// Every bind then copies the storage again (an 8 MB texture at 60 Hz is 480 MB/s), so only such a game's profile turns it on.
++static int pkg_reupload_on(void) { static int v = -1;
++    if (v < 0) { const char *e = getenv("DM_NVN_PKG_REUPLOAD"); v = e && atoi(e) != 0;
++                 if (v) MLOG("DM_NVN_PKG_REUPLOAD: packaged textures are uploaded again on every bind (workaround)"); }
++    return v; }
++static int pkg_edges_clean(NvPkg *pk, const tex_t *t) {   // the covered pages were written since the upload: 1 = only edge pages, and the texture's bytes there are as uploaded    if (!pk->edge_n[0] && !pk->edge_n[1]) return 0;
+     uintptr_t r[2][2], ia, ie; pkg_edge_ranges(t, r, &ia, &ie);
+     uint64_t st = nvn_dirty_now(); nvn_dirty_protect(t->mem, t->L.size);   // take the stamp, protect, then read (as pkg_upload): a later write is seen at the next check
+     if (ie > ia && nvn_dirty_since_span(pk->span, (const void *)ia, ie - ia, pk->stamp)) return 0;
+@@ -3448,7 +3504,7 @@
          }
      }
      id have = tex_get(t->serial);
@@ -65,7 +107,25 @@ diff --git a/dm/gfx/nvn/nvn_mtl.m b/dm/gfx/nvn/nvn_mtl.m
      if (!packaged && !have && on_sub_thread() && tex_cpu_content(t)) { mtl_tex_cpu_written(t); packaged = 1; }   // storage the CPU wrote before its first use (tex_cpu_content)
      if (!packaged && !have && on_sub_thread() && linear_cpu_only(t)) {   // a linear texture no view on its buffer can take (iOS wants 64-byte rows; Axiom Verge's 8x8 RGBA8 linear textures have 32): uploaded, and again after CPU writes
          uint32_t pf; void *mb; uint64_t mo; size_t row;
-@@ -4592,11 +4624,11 @@
+@@ -3465,7 +3521,7 @@
+             if (g_nabsp && pkg_absorb_waits(t->serial)) return pk->view ? pk->view : pk->tex;
+             uint64_t now = nvn_dirty_now();
+             int tracked = pk->span != NULL;   // kept from the upload: a texture's pool stays registered while the texture lives
+-            int clean = tracked && (now == pk->seen || !nvn_dirty_since_span(pk->span, t->mem, t->L.size, pk->stamp));
++            int clean = tracked && (now == pk->seen || !nvn_dirty_since_span(pk->span, t->mem, t->L.size, pk->stamp)) && !pkg_reupload_on();
+             // Checked already in this submission: seen and vseen stay those of that check, so a write or a mapping another thread makes during the replay is found at the next submission's
+             if (pk->sparse && sparse_checked(pk)) { clean = 1; now = pk->seen; }
+             else if (pk->sparse) { uint64_t g = nvn_sparse_gen(); clean = (now == pk->seen && g == pk->vseen) || !nvn_sparse_since(t->pool, (uint64_t)(uintptr_t)t->mem, t->L.size, pk->vgen, pk->stamp); pk->vseen = g; pk->sub = g_sub_serial; }
+@@ -3476,7 +3532,7 @@
+                     MLOG("[RED] dirty-page miss: texture ser=%llu pool content changed but was not detected", t->serial);
+                 return pk->view ? pk->view : pk->tex;
+             }
+-            if (!pk->sparse && pkg_edges_clean(pk, t)) return pk->view ? pk->view : pk->tex;   // only the pages it shares with other data were written
++            if (!pk->sparse && !pkg_reupload_on() && pkg_edges_clean(pk, t)) return pk->view ? pk->view : pk->tex;   // only the pages it shares with other data were written
+             // Pool content changed (streamed assets written into the same storage, a movie frame): switch to another texture, as in-flight draws still read the old one. That is the spare
+             // when the GPU is done with it (see NvPkg), else a new one; the old one becomes the spare (pkg_upload_ made nt resident)
+             id<MTLTexture> reuse = nil;
+@@ -4592,11 +4648,11 @@
      g_shmap_path = path;
      const char *m = getenv("DM_MSL_DIR");
      // Library directory = <DM_MSL_DIR or default cache>/b-<translation chain version>: the version comes from dm/gfx/nvn/dmsh_chain.h (tools/dmsh_chain.py), one for every game; a host built from an old source tree only accepts libraries of the old version
@@ -79,7 +139,7 @@ diff --git a/dm/gfx/nvn/nvn_mtl.m b/dm/gfx/nvn/nvn_mtl.m
      }
      // The library's stamp (inputs.tsv, written by a full dmsh_build.py run): the game and the digest of the profile inputs it was built from. The chain version is the same for every
      // game and every state of a profile's tables, so the stamp is what ties c1_full.tsv / cb_extent.tsv to these libraries: each names the inputs of the library it was made from
-@@ -4612,7 +4644,7 @@
+@@ -4612,7 +4668,7 @@
      NSString *cp = [[path stringByDeletingLastPathComponent] stringByAppendingPathComponent:@"c1_full.tsv"];   // Same directory as the mapping table (Mac: dm/games/<id>; iOS: dm/ inside the App, copied along by build_ipa.sh)
      NSString *ct = cp ? [NSString stringWithContentsOfFile:cp encoding:NSUTF8StringEncoding error:nil] : nil;
      NSString *head = ct ? [[ct componentsSeparatedByString:@"\n"] firstObject] : nil;
@@ -88,7 +148,7 @@ diff --git a/dm/gfx/nvn/nvn_mtl.m b/dm/gfx/nvn/nvn_mtl.m
      if (!head || ![head hasPrefix:want]) {
          MLOG("[RED] c1_full.tsv is stale or missing (its header must name this library's chain and inputs; a full dmsh_build.py run makes it); every c1 gets its own 64 KiB");
      } else {
-@@ -4641,7 +4673,7 @@
+@@ -4641,7 +4697,7 @@
      NvShader *geo_lean_v[5]; uint8_t geo_lean_tried;   // a geometry shader's lean kernels by input topology (looked up once)
      NvShader *geo_bg_v[5], *geo_bgv_v; uint8_t geo_bg_tried;   // its kernels by input topology (_bg<n>) and its reader (_bgv), looked up once (bit 7: the reader)
      NSMutableDictionary *geo_mesh;   // a vertex shader's mesh entries by lean kernel key (geo_mesh_fn; NSNull: none)
@@ -97,7 +157,7 @@ diff --git a/dm/gfx/nvn/nvn_mtl.m b/dm/gfx/nvn/nvn_mtl.m
      uint8_t up_color;   // such a shader's colour, from its code at load with DM_UPSCALER=metalfx (up_mfx_color; UP_COLOR_UNREAD otherwise)
      int gs_loc, lay_loc; char gs_comp, lay_comp;   // a slice-writing geometry shader (no function: the layer comes from input gs_loc.gs_comp) / a vertex shader with layer entry points writing output lay_loc.lay_comp (dmsh_build.py gs_slice, vs_layer_entry); -1 = none
      uint64_t cbs_seen; uint32_t cbs_runs;   // the command buffer that listed this shader last, and how many have (cbs_note)
-@@ -4652,6 +4684,7 @@
+@@ -4652,6 +4708,7 @@
      NSString *ventry; id<MTLFunction> vfn; int vfn_state;
      id<MTLFunction> pfn; int pfn_state, has_pull;
      id<MTLFunction> afn[4]; int afn_state, has_alpha;
@@ -105,7 +165,7 @@ diff --git a/dm/gfx/nvn/nvn_mtl.m b/dm/gfx/nvn/nvn_mtl.m
      id<MTLLibrary> llib; NSMutableDictionary<NSNumber *, id<MTLFunction>> *lfn; int lfn_state, has_logic; } @end   // llib: the side library <key>_bx for logic operations, lfn: its fn_u / fn_m specialized per set of targets (lo_fn; lfn_state as afn_state; has_logic: the reflection names its entry points, dmsh_logic.py)   // afn: the alpha test entry points of fn, fn_u, fn_m, fn_d in the side library <key>_bx (at_fn; afn_state 0 untried, 1 loaded, 2 failed; has_alpha: the reflection names them, dmsh_alpha.py)   // pfn: the same entry of the pulling library <key>_bp (pull_fn; has_pull: the reflection names one, dmsh_pull.py)   // vertex: the entry point loaded (by the depth mode); vfn: the same entry of the shadow-input library <key>_bv (vin_fn; state 0 untried, 1 loaded, 2 failed)
  @implementation NvShader
  - (void)dealloc { free(rf.c1); free(geo_slot); }
-@@ -4766,12 +4799,49 @@
+@@ -4766,12 +4823,49 @@
  // Build the library from a .metallib file without permanently occupying a file descriptor: newLibraryWithURL keeps that file open for as long as the library object lives (one per game shader - of the 258 descriptors the iOS app permanently holds in a run, 213 are these,
  // while the default soft limit of an iOS process is 256; new shaders created in other acts raise it further). Here the file is mapped into memory and closed immediately, and the library is built from the in-memory data; the mapping is released when the library's data object is freed
  static __thread int t_lib_layer;
@@ -155,7 +215,7 @@ diff --git a/dm/gfx/nvn/nvn_mtl.m b/dm/gfx/nvn/nvn_mtl.m
              void *base = f.base; size_t base_len = f.base_len;
              dispatch_data_t d = dispatch_data_create(f.data, f.size, dispatch_get_global_queue(QOS_CLASS_UTILITY, 0), ^{ munmap(base, base_len); });
              return [g_dev newLibraryWithData:d error:err];
-@@ -4781,6 +4851,18 @@
+@@ -4781,6 +4875,18 @@
      if (fd < 0 || fstat(fd, &st) || st.st_size <= 0) { if (fd >= 0) close(fd); if (err) *err = [NSError errorWithDomain:NSPOSIXErrorDomain code:errno userInfo:@{NSLocalizedDescriptionKey: [NSString stringWithFormat:@"cannot open %@", path]}]; return nil; }
      size_t len = (size_t)st.st_size; void *m = mmap(NULL, len, PROT_READ, MAP_PRIVATE, fd, 0); close(fd);
      t_lib_layer = m != MAP_FAILED && memmem(m, len, "render_target_array_index", 25) != NULL;   // the library's functions use the layer: for a vertex library, its output (shader_load)
@@ -174,7 +234,7 @@ diff --git a/dm/gfx/nvn/nvn_mtl.m b/dm/gfx/nvn/nvn_mtl.m
      if (m == MAP_FAILED) { if (err) *err = [NSError errorWithDomain:NSPOSIXErrorDomain code:errno userInfo:@{NSLocalizedDescriptionKey: [NSString stringWithFormat:@"mmap failed %@", path]}]; return nil; }
      dispatch_data_t d = dispatch_data_create(m, len, dispatch_get_global_queue(QOS_CLASS_UTILITY, 0), ^{ munmap(m, len); });
      return [g_dev newLibraryWithData:d error:err];
-@@ -4862,7 +4944,7 @@
+@@ -4862,7 +4968,7 @@
      NSError *e = nil;
      NSData *jd = msl_data([NSString stringWithFormat:@"%@/%@.json", g_msl_dir, pc]);
      NSDictionary *j = jd ? [NSJSONSerialization JSONObjectWithData:jd options:0 error:nil] : nil;
@@ -183,7 +243,7 @@ diff --git a/dm/gfx/nvn/nvn_mtl.m b/dm/gfx/nvn/nvn_mtl.m
          NvShader *o = [NvShader new]; o->stage = 2; o->lay_loc = -1; strlcpy(o->key, pc.UTF8String, sizeof o->key);
          o->gs_loc = [j[@"gs_slice"][@"loc"] intValue]; o->gs_comp = [[j[@"gs_slice"][@"comp"] description] UTF8String][0];
          return o;
-@@ -4871,13 +4953,13 @@
+@@ -4871,13 +4977,13 @@
      NSString *lp = [NSString stringWithFormat:@"%@/%@.metallib", g_msl_dir, pc];
      id<MTLLibrary> lib = lib_from_file(lp, &e);
      if (!lib || !j) { MLOG("[RED] failed to load shader %s: %s", pc.UTF8String, e ? e.localizedDescription.UTF8String : "no reflection json"); return nil; }
@@ -199,7 +259,7 @@ diff --git a/dm/gfx/nvn/nvn_mtl.m b/dm/gfx/nvn/nvn_mtl.m
          // (rf.c1 is freed by dealloc when o goes: freeing it here too was a double free, which aborted FINAL FANTASY RESONANCE at its first such shader)
          MLOG("[RED] shader %s reflection conversion failed: a texture handle the translator could not trace to one slot (profile key tex_dyn_slots off)", pc.UTF8String); return nil; }
      if (rt_range_on()) o->range_ro=rt_range_bindings_ro(j);
-@@ -4913,6 +4995,9 @@
+@@ -4913,6 +5019,9 @@
      if (stage == 0 && !layer) o->has_pull = [j[@"pull"] isKindOfClass:[NSDictionary class]];
      if (stage == 1) o->has_alpha = [j[@"alpha"] isKindOfClass:[NSDictionary class]];
      if (stage == 1) o->has_logic = [j[@"logic"] isKindOfClass:[NSDictionary class]];
@@ -209,7 +269,7 @@ diff --git a/dm/gfx/nvn/nvn_mtl.m b/dm/gfx/nvn/nvn_mtl.m
      // A function that declares function constants cannot go into a pipeline until it is specialized, even when every constant is optional. SPIRV-Cross declares one for shaders that read a
      // texel buffer (spvLinearTextureAlignmentOverride, used only through is_function_constant_defined; one of Pokémon Legends: Z-A's imgui pixel shaders, 2bd5037003980716): an empty set of
      // values keeps its default. Without it the first pipeline with that shader failed Metal's validation (`fragmentFunction main0 cannot be used to build a pipeline state`)
-@@ -6547,7 +6632,9 @@
+@@ -6547,7 +6656,9 @@
      if (!fs->afn_state) {
          fs->afn_state = 2;
          size_t kl = strlen(fs->key); NSString *path = [NSString stringWithFormat:@"%@/%.*s_bx.metallib", g_msl_dir, (int)(kl > 2 ? kl - 2 : kl), fs->key];
@@ -220,7 +280,7 @@ diff --git a/dm/gfx/nvn/nvn_mtl.m b/dm/gfx/nvn/nvn_mtl.m
          id<MTLFunction> own[4] = {fs->fn, fs->fn_u, fs->fn_m, fs->fn_d};
          for (int i = 0; i < 4 && !why; i++) {
              if (!own[i]) continue;
-@@ -6620,7 +6707,9 @@
+@@ -6620,7 +6731,9 @@
      if (!fs->lfn_state) {
          fs->lfn_state = 2;
          size_t kl = strlen(fs->key); NSString *path = [NSString stringWithFormat:@"%@/%.*s_bx.metallib", g_msl_dir, (int)(kl > 2 ? kl - 2 : kl), fs->key];
@@ -231,7 +291,7 @@ diff --git a/dm/gfx/nvn/nvn_mtl.m b/dm/gfx/nvn/nvn_mtl.m
          else why = "no library";
      }
      id<MTLFunction> f = nil; NSNumber *k = @(w << 8 | (targets & 0xff));
-@@ -7234,6 +7323,95 @@
+@@ -7234,6 +7347,95 @@
      g_pt_spec_ns += bp_now() - ts;
      return ps;
  }
@@ -327,7 +387,7 @@ diff --git a/dm/gfx/nvn/nvn_mtl.m b/dm/gfx/nvn/nvn_mtl.m
  static id<MTLRenderPipelineState> pso_build(MTLRenderPipelineDescriptor *d, NSError **e) { return pso_build_ex(d, e, 1); }
  // Pipeline key: current state S + pass formats (normal pass; a merged pass additionally carries lmap / specialized function, filled in by pso_get)
  static void pso_key_fill(pso_key *k, NvShader *vs, NvShader *fs, const uint32_t cfmt[8], uint32_t dfmt, uint32_t sfmt, uint32_t samples, int lmap) {
-@@ -7437,7 +7615,7 @@
+@@ -7437,7 +7639,7 @@
  // The base of one pair as the draws make it (pso_desc_pull / pso_desc), or nil when the pair is left to the draws. Call inside an autorelease pool
  static MTL4RenderPipelineDescriptor *pre_desc(NSString *vk, NSString *fk, int zero) {
      NSDictionary *vj = pre_json(vk), *fj = pre_json(fk);
@@ -336,7 +396,7 @@ diff --git a/dm/gfx/nvn/nvn_mtl.m b/dm/gfx/nvn/nvn_mtl.m
      NSString *ventry = zero && vj[@"entry_z"] ? vj[@"entry_z"] : vj[@"entry"], *fentry = fj[@"entry"] ?: @"main0";
      int pull = [vj[@"pull"] isKindOfClass:[NSDictionary class]];
      if (!pull && [vj[@"vertex_inputs"] count]) return nil;   // stage inputs and no pulling library: its pipelines need the draw's layout
-@@ -7477,7 +7655,7 @@
+@@ -7477,7 +7679,7 @@
  // the same for the archive it makes offline, from the same files
  static NSString *pre_stamp(NSString *txt, int zero) {
      NSData *d = [txt dataUsingEncoding:NSUTF8StringEncoding]; uint8_t h[CC_SHA256_DIGEST_LENGTH]; CC_SHA256(d.bytes, (CC_LONG)d.length, h);
@@ -345,7 +405,7 @@ diff --git a/dm/gfx/nvn/nvn_mtl.m b/dm/gfx/nvn/nvn_mtl.m
              h[0], h[1], h[2], h[3], h[4], h[5], h[6], h[7]];
  }
  static NSArray<NSArray<NSString *> *> *pre_parse(NSString *txt) {   // (vertex key, pixel key) per line, without empty lines, comments and repeated lines
-@@ -7691,6 +7869,11 @@
+@@ -7691,6 +7893,11 @@
              vs->layer_out = 1; MLOG("vertex shader %s writes the layer: its pipelines get the triangle input primitive class", vs->key);
              e = nil; d = pso_desc(&k, vs, fs, ms_fn ? ms_fn : g_pso_fsfn, g_pso_lmap != NULL); ps = pso_build(d, &e);
          }
@@ -357,7 +417,24 @@ diff --git a/dm/gfx/nvn/nvn_mtl.m b/dm/gfx/nvn/nvn_mtl.m
      }
      if (!took) {   // the draw waited (built here, made from its queued build, or waited for its running build)
          uint64_t w = bp_now() - bt - (g_pt_pred_ns - pred0); g_pw_n[why]++; g_pw_ns[why] += w;
-@@ -11956,7 +12139,7 @@
+@@ -11442,6 +11649,16 @@
+     if (!g_defer_replaying && !g_geo_program) {
+         if (g_defer.active && g_defer.in_p && !g_defer.at_q) { if (defer_take(dw, di)) return; }
+     }
++    // Diagnostic DM_DRAWLOG=1 (off by default): one line per draw with the program's vertex and fragment shader keys, so an object that draws
++    // wrong can be matched to its shader without guessing keys (a key can otherwise only be tested one at a time with DM_NVN_HILITE). Both
++    // switches come from the environment, which on iOS is dm/env.txt (a Documents/env.txt beside the save data overrides it): write the line
++    // there and relaunch, no diagnostic is compiled in. DM_DRAWLOG_COUNT caps the lines (default 300).
++    { static int dl = -1, dn, cap = 300;
++      if (dl < 0) { const char *e = getenv("DM_DRAWLOG"); dl = e && atoi(e) != 0;
++                    const char *c = getenv("DM_DRAWLOG_COUNT"); if (c && atoi(c) > 0) cap = atoi(c);
++                    if (dl) MLOG("DM_DRAWLOG: logging the first %d draws (vs / ps keys)", cap); }
++      if (dl && dn < cap) { dn++; MLOG("[draw] f%llu p%llu vs=%s ps=%s", (unsigned long long)atomic_load(&g_cur_frame),
++          (unsigned long long)g_stat_pass, pr->sh[0] ? pr->sh[0]->key : "-", pr->sh[1] ? pr->sh[1]->key : "-"); } }
+     // Draws that cannot draw anything (both faces culled, empty scissor) return before the render pass is opened: otherwise the render pass is already open and on TBDR the whole attachment is loaded and stored for nothing
+     // (Mac character select page: 3 render passes are opened only because of such draws, all loaded, zero draws)
+     // Diagnostic switch for measuring an upper bound DM_NVN_SKIP_FS=<fragment key>[,<fragment key>...] (none by default): drops all draws of these fragment shaders (the picture will be wrong; only used in real-device ABA to measure "how much GPU time this class of draws is worth in total")
+@@ -11956,7 +12173,7 @@
          for (size_t y = 0; y < hb; y++) memcpy(dst + y * row, (const uint8_t *)t->mem + (y0 + y) * srow + x0, wb);
          return;
      }
@@ -366,7 +443,23 @@ diff --git a/dm/gfx/nvn/nvn_mtl.m b/dm/gfx/nvn/nvn_mtl.m
          // A sparse pool's texture is read through a copy gathered from its page table, unmapped pages as 0, as pkg_upload_ uploads it: where nothing is mapped its address range is
          // inaccessible (reading the storage directly stopped the host with SIGBUS)
          const uint8_t *mem = t->mem; uint8_t *part = NULL;
-@@ -12780,7 +12963,7 @@
+@@ -12455,10 +12672,11 @@
+         sc.colorTexture = col; sc.depthTexture = dep; sc.motionTexture = mot; sc.outputTexture = out; sc.exposureTexture = expo;
+         sc.inputContentWidth = iw; sc.inputContentHeight = ih;
+         if (@available(macOS 27.0, iOS 27.0, *)) {   // the rectangles' corners: all at the origin on the game seen, so an older system loses nothing there
+-            sc.colorContentOffsetX = (NSUInteger)a.base[DLSS_COLOR][0]; sc.colorContentOffsetY = (NSUInteger)a.base[DLSS_COLOR][1];
+-            sc.depthContentOffsetX = (NSUInteger)a.base[DLSS_DEPTH][0]; sc.depthContentOffsetY = (NSUInteger)a.base[DLSS_DEPTH][1];
+-            sc.motionContentOffsetX = (NSUInteger)a.base[DLSS_MOTION][0]; sc.motionContentOffsetY = (NSUInteger)a.base[DLSS_MOTION][1];
+-            sc.outputOffsetX = (NSUInteger)a.base[DLSS_OUTPUT][0]; sc.outputOffsetY = (NSUInteger)a.base[DLSS_OUTPUT][1];
++            id<DMTemporalScalerOffsets> off = (id<DMTemporalScalerOffsets>)sc;   // the properties an SDK older than 27 has no declaration for (see the top of this file)
++            off.colorContentOffsetX = (NSUInteger)a.base[DLSS_COLOR][0]; off.colorContentOffsetY = (NSUInteger)a.base[DLSS_COLOR][1];
++            off.depthContentOffsetX = (NSUInteger)a.base[DLSS_DEPTH][0]; off.depthContentOffsetY = (NSUInteger)a.base[DLSS_DEPTH][1];
++            off.motionContentOffsetX = (NSUInteger)a.base[DLSS_MOTION][0]; off.motionContentOffsetY = (NSUInteger)a.base[DLSS_MOTION][1];
++            off.outputOffsetX = (NSUInteger)a.base[DLSS_OUTPUT][0]; off.outputOffsetY = (NSUInteger)a.base[DLSS_OUTPUT][1];
+         }
+         sc.motionVectorScaleX = a.mv[0]; sc.motionVectorScaleY = a.mv[1];
+         sc.jitterOffsetX = a.jitter[0]; sc.jitterOffsetY = a.jitter[1];
+@@ -12780,7 +12998,7 @@
                  PD("Y signal_event cmd=%p dst=%p mode=%u value=%u", p, val, m, v); mtl_sub_event(val, m, v); break; }
              case OP_REPORT_COUNTER: { uint64_t t, ad; memcpy(&t, a, 8); memcpy(&ad, (const uint8_t *)a + 8, 8); g_cnt_report[t & 31]++;
                  PD("Q report type=%llu cmd=%p dst=%#llx", (unsigned long long)t, p, (unsigned long long)ad);
@@ -375,7 +468,55 @@ diff --git a/dm/gfx/nvn/nvn_mtl.m b/dm/gfx/nvn/nvn_mtl.m
                  if (t == NVN_COUNTER_TYPE_SAMPLES_PASSED) { post((post_op){3, NULL, 0, 0, ad, (uint32_t)t, vis_snapshot()}); g_vis_cur = -1; }
                  else mtl_sub_counter(ad, (uint32_t)t);
                  break; }
-@@ -13434,13 +13617,27 @@
+@@ -13290,13 +13508,40 @@
+     if (!v) { RED_ONCE(69, "present: cannot create a non-sRGB view of the sRGB swapchain texture (format %lu); presenting the decoded values", (unsigned long)src.pixelFormat); return src; }
+     return v;
+ }
+-// The rectangle of the canvas (dw x dh) the picture (pw x ph) is drawn into: the picture's aspect ratio kept and centred, black bars in the rest (no stretching when the screen's ratio
+-// differs from the game's, e.g. iPhone about 19.5:9 against the game's 16:9); when the ratios differ by under 1 % (the remainder from a game width that is a multiple of 8 in the
+-// full-screen setup, e.g. 1952x900 against 2868x1320 differs by 0.17 %) the whole canvas, leaving no border of a few pixels
+-static MTLViewport present_viewport(double pw, double ph, double dw, double dh) {
+-    double s = fmin(dw / pw, dh / ph);
+-    MTLViewport vp = {floor((dw - pw * s) / 2), floor((dh - ph * s) / 2), round(pw * s), round(ph * s), 0, 1};
+-    if (fabs((dw / dh) / (pw / ph) - 1) < 0.01) vp = (MTLViewport){0, 0, dw, dh, 0, 1};
++// The rectangle of the canvas (dw x dh) the picture (cw x ch) is drawn into: the picture's aspect ratio kept and centred, black bars in the rest (no stretching when the screen's
++// ratio differs from the game's, e.g. iPhone about 19.5:9 against the game's 16:9); when the ratios differ by under DM_PRESENT_FIT_TOL (1 % by default: the remainder from a game width
++// that is a multiple of 8 in the full-screen setup, e.g. 1952x900 against 2868x1320 differs by 0.17 %) the whole canvas, leaving no border of a few pixels.
++//
++// The widescreen route (Hor+, docs/SHELL.md) has two independent sides, and both are needed: DmLayout.h's DM_VIEW_ASPECT makes the game's view the screen, and this one decides how
++// the game's picture lands on that view's canvas. So the ratio rule is a switch of its own here:
++//   DM_PRESENT_FIT=auto       (default) the tolerance rule above
++//   DM_PRESENT_FIT=full       always the whole canvas: the picture is stretched to it. For a game whose own docked resolution is wider than 16:9 but still off the phone's ratio by
++//                             more than the tolerance, and as a quick look at whether the geometry and the UI survive a wide picture before anyone patches the game's constants
++//   DM_PRESENT_FIT=letterbox  always the picture's own ratio, bars even where the difference is tiny (a control picture: a 16:9 game on the same phone)
++//   DM_PRESENT_FIT_TOL=<0..1> the tolerance the auto rule uses (0.01 = 1 %)
++static int g_pfit;              // 0 auto, 1 full, 2 letterbox
++static double g_pfit_tol = 0.01;
++static void present_fit_env(void) {
++    const char *e = getenv("DM_PRESENT_FIT");
++    if (e && *e) {
++        if (!strcmp(e, "full")) g_pfit = 1;
++        else if (!strcmp(e, "letterbox") || !strcmp(e, "fit")) g_pfit = 2;
++        else if (strcmp(e, "auto")) MLOG("[RED] DM_PRESENT_FIT=%s: auto, full or letterbox; keeping auto", e);
++    }
++    const char *t = getenv("DM_PRESENT_FIT_TOL");
++    if (t && *t) { double v = atof(t); if (v >= 0 && v <= 1) g_pfit_tol = v; else MLOG("[RED] DM_PRESENT_FIT_TOL=%s: 0 to 1; keeping %.3f", t, g_pfit_tol); }
++    if (g_pfit || g_pfit_tol != 0.01)
++        MLOG("present fit (DM_PRESENT_FIT): %s, tolerance %.3f", g_pfit == 1 ? "full, the picture stretched to the canvas" :
++             g_pfit == 2 ? "letterbox, the picture keeps its ratio" : "auto", g_pfit_tol);
++}
++static MTLViewport present_viewport(double cw, double ch, double dw, double dh) {
++    static pthread_once_t once = PTHREAD_ONCE_INIT;
++    pthread_once(&once, present_fit_env);   // a launch setting: read once, whatever thread presents first
++    double s = fmin(dw / cw, dh / ch);
++    MTLViewport vp = {floor((dw - cw * s) / 2), floor((dh - ch * s) / 2), round(cw * s), round(ch * s), 0, 1};
++    double tol = g_pfit == 1 ? 1e9 : g_pfit == 2 ? -1.0 : g_pfit_tol;   // full: always the canvas; letterbox: never
++    if (fabs((dw / dh) / (cw / ch) - 1) < tol) vp = (MTLViewport){0, 0, dw, dh, 0, 1};
++
+     return vp;
+ }
+ // The shape the picture is shown in, whatever part of the texture it comes from. The Switch's compositor stretches a buffer's crop to the layer, so a crop only picks texels: Super
+@@ -13434,13 +13679,27 @@
  static up_mfx_scaler g_up_mfx[UP_MFX_SCALERS]; static int g_up_mfx_next;
  static uint64_t g_up_mfx_n, g_up_mfx_kept;   // dispatches drawn by MetalFX, dispatches of a named shader left to it
  void mtl_up_mfx_stats(uint64_t *n, uint64_t *kept) { *n = g_up_mfx_n; *kept = g_up_mfx_kept; }
@@ -404,7 +545,7 @@ diff --git a/dm/gfx/nvn/nvn_mtl.m b/dm/gfx/nvn/nvn_mtl.m
      return v;
  }
  // The colour a variant of the network takes and writes, from the sRGB curves in its code (their constants are immediates, whole bytes in the code). The variants differ inside a pack, so this is the shader's and not the game's:
-@@ -13462,13 +13659,13 @@
+@@ -13462,13 +13721,13 @@
  #undef UP_F16
      return enc32 && dec32 && !enc16 && !dec16 ? UP_COLOR_LINEAR : dec16 && !enc16 && !enc32 && !dec32 ? UP_COLOR_SRGB : UP_COLOR_KEEP;
  }
@@ -421,7 +562,7 @@ diff --git a/dm/gfx/nvn/nvn_mtl.m b/dm/gfx/nvn/nvn_mtl.m
      uint32_t nctl, ncode = 0; if (sd->control) nvn_ctl_lens(sd->control, &nctl, &ncode);
      cs->up_color = sd->data && ncode && ncode < (1u << 24) ? up_mfx_color((const void *)(uintptr_t)sd->data, ncode) : UP_COLOR_KEEP;
      MLOG("upscaler %s: %s", cs->key, cs->up_color == UP_COLOR_LINEAR ? "linear input and output, MetalFX in HDR mode" : cs->up_color == UP_COLOR_SRGB ? "sRGB-encoded input, linear output, MetalFX in perceptual mode" : "neither of the colour shapes MetalFX draws; the game's shader runs");
-@@ -13477,7 +13674,7 @@
+@@ -13477,7 +13736,7 @@
  static int up_mfx_wanted(NvShader *cs) {
      if (cs->up_mfx) return cs->up_mfx == 1;
      cs->up_mfx = 2;

@@ -1,0 +1,39 @@
+# Provisional game profile (written on Windows from dm/games/profile_guess.py, not checked by hand)
+# Kizuna AI - Touch the Beat!, SDK 14, from I:\APP\ns2ios-shell\workingdir\0100BF2019B98000_survey
+
+# ---- Identity ----
+title_id	0100BF2019B98000
+program_id	0100BF2019B98000
+
+# ---- App ----
+name	Kizuna AI - Touch the Beat!
+ipa	KizunaAITouchtheBeat.ipa
+app_category	public.app-category.games
+
+# ---- Versions ----
+build	v196608	1.0.3	main=cb7327022a41c1a318bdcb04f902f641	subsdk0=c781dd63daf0ddcdb9975da50a198f93	sdk=2aef2cffb104ee7c9e212fd2f4c731e9
+package	v196608
+shader_versions	v196608
+
+# ---- Files ----
+# every module main imports from
+modules	main subsdk0 sdk
+romfs_marker	Data/StreamingAssets/mirai
+zip_store	.dat:.png:.ress:.metallib
+
+# ---- Memory ----
+# profile_guess's 5 GB block (4.375 GB alias) is too small here. Measured on the iPad 2026-10-31:
+# nninitStartup takes a 3.14 GB address region at alias +0.75 GB and the region is at +4.27 GB of 4.38 GB by the menu;
+# entering a song then crashed in memset (SIGBUS, sdk+0x589844 called from main+0xf53924) on a 22.9 MB block at alias
+# +4.33 GiB, right at the frontier. With a 7 GB alias (DM_ALIAS_SIZE=0x1C0000000 in Documents/env.txt) the same run
+# reached +5.25 GB and played; the block grew by the same 2.625 GB.
+mem_reserve	0x1e8000000
+mem_alias	0x1c0000000
+mem_stack	0x10000000
+app_pool	0xCD500000
+# the NPDM declares 16 MB of system resource
+sys_resource	0x1000000
+
+# ---- Shader split ----
+shader_groups	/Data/=data
+shader_note	Kizuna AI - Touch the Beat! shaders (provisional profile)

@@ -2730,6 +2730,10 @@ def scan_blob(d, label, out, depth=0, left=None):
         left[0] -= stored
         if left[0] < 0: red(f'{label}: the archive members add up to more than {NEST} times the file (members that overlap)')
     if d[:4] == b'SARC':
+        # Nintendo's layout archives keep shaders as members, but this branch used to return whether or not a member held one:
+        # for GROOVE COASTER WAI WAI PARTY!!!!'s ui/*.arc (big-endian SARC) the whole file was skipped and the game reported 19
+        # shaders it did not have at run time ("is not in the shader map"), drawing its text and UI with the wrong programs.
+        # Members are scanned first, then the file by the scans below, which find the BNSH whatever the member table says.
         for nm, m in sarc_members(d, label): scan_blob(m, f'{label}/{nm}', out, depth + 1, left)
         return
     if d[:4] == b'NARC':   # Camelot's containers (cra.py): each member packed by its first byte, so its size says nothing about the budget above

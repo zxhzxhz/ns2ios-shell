@@ -1,0 +1,35 @@
+# Provisional game profile (written on Windows from dm/games/profile_guess.py, not checked by hand)
+# Kemono Teatime, SDK 18, from I:\APP\ns2ios-shell\workingdir\010010701FB5E000_pack\survey
+
+# ---- Identity ----
+title_id	010010701FB5E000
+program_id	010010701FB5E000
+
+# ---- App ----
+name	Kemono Teatime
+ipa	KemonoTeatime.ipa
+app_category	public.app-category.games
+
+# ---- Versions ----
+build	v131072	1.0.2	main=bdfb3ca7b799af9baecddc67dd0262ec	subsdk0=6b29d0c7a23a7c0bf7fb98699cc8bcb7	sdk=6075151627016eef437c1312f2e3ed56
+package	v131072
+shader_versions	v131072
+
+# ---- Files ----
+# every module main imports from
+modules	main subsdk0 sdk
+romfs_marker	Data/resources.assets
+zip_store	.assets:.dat:.png:.resource:.ress:.metallib
+
+# ---- Memory ----
+# Unity 2022.3.51f1 IL2CPP: the 7 GB alias layout (README rule 7) — profile_guess's 4.375 GB ran out for every Unity game so far
+mem_reserve	0x210000000
+mem_alias	0x1C0000000
+mem_stack	0x10000000
+app_pool	0xCD500000
+# the NPDM declares 16 MB of system resource
+sys_resource	0x1000000
+
+# ---- Shader split ----
+shader_groups	/Data/=data
+shader_note	Kemono Teatime shaders (provisional profile)

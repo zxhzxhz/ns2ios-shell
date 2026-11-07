@@ -31,6 +31,13 @@
 #include <stdatomic.h>
 #import "DmLayout.h"
 #import "DmGameMenu.h"
+// iOS 27 added CMMotionManager.deviceMotionBody (the view Core Motion samples the phone's motion in). A build host whose SDK
+// predates it has no declaration for the property even though the system the app runs on does, and the @available(iOS 27, *)
+// path below then stops the compile ("property 'deviceMotionBody' not found on object of type 'CMMotionManager *'"). This
+// private build declares it so it compiles against an older SDK; nothing calls it on a system that lacks it.
+@interface CMMotionManager (DMDeviceMotionBodyCompat)
+@property (nonatomic, assign) UIView *deviceMotionBody;
+@end
 
 enum { B_A = 0, B_B, B_X, B_Y, B_LS, B_RS, B_L, B_R, B_ZL, B_ZR, B_PLUS, B_MINUS, B_LEFT, B_UP, B_RIGHT, B_DOWN, B_N };
 enum { C_NONE = 0, C_STICK, C_DPAD, C_FACE, C_BTN, C_GAME };   // which control a touch holds; C_GAME: none, the touch goes to the game's touch screen (finger slot << 8)

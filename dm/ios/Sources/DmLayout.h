@@ -2,6 +2,9 @@
 // its safe area and an iPhone Duo's fold (UIKit's division region, which includes its interactive margins), so the Duo harness tests them without a device (dm/ios/tests/duo).
 #pragma once
 #import <UIKit/UIKit.h>
+#include <stdio.h>
+#include <stdlib.h>
+#include <string.h>
 
 NS_ASSUME_NONNULL_BEGIN
 
@@ -14,10 +17,38 @@ static inline UIEdgeInsets dm_game_safe_insets(CGRect bounds, UIEdgeInsets inset
 // The picture's width / height before the game's first present (front.h front_picture_shape gives the real one: a taller shape under DM_SCREEN_ASPECT, 1920x1344)
 #define DM_PICTURE_16_9 (16.0 / 9.0)
 
+// The picture's shape: 16:9 by default. A game that renders the screen's own shape (the widescreen route, docs/SHELL.md: the game's
+// docked resolution widened to the phone's ratio) asks for the whole view instead, so nothing is left to letterbox here.
+//   DM_VIEW_ASPECT=full | off | 0   the whole view (Hor+; the present fills that canvas only when the game's ratio is within
+//                                   DM_PRESENT_FIT_TOL, or DM_PRESENT_FIT=full — nvn_mtl.m present_viewport)
+//   DM_VIEW_ASPECT=19.5:9 | 2.1667  another shape, fitted
+// Unset keeps 16:9, upstream's behaviour. Read once: it is a launch setting, and every layout pass would otherwise call getenv.
+// One function for all three users (this file's layouts, front_ios.m's TV path, DmGamepad.m's touch mapping through dm_game_touch_point),
+// so a wide picture cannot be laid out in one place and touched in another.
+static inline CGFloat dm_view_aspect(void) {
+    static int read; static CGFloat r;
+    if (read) return r;
+    read = 1; r = 16.0 / 9.0;
+    const char *e = getenv("DM_VIEW_ASPECT");
+    if (!e || !*e) return r;
+    if (!strcmp(e, "full") || !strcmp(e, "off") || !strcmp(e, "0")) { r = 0; return r; }
+    if (strchr(e, ':')) {
+        double a = 0, b = 0;
+        if (sscanf(e, "%lf:%lf", &a, &b) == 2 && a > 0.1 && b > 0.1 && a / b > 0.1 && a / b < 10.0) r = (CGFloat)(a / b);
+        return r;
+    }
+    { double v = atof(e); if (v > 0.1 && v < 10.0) r = (CGFloat)v; }
+    return r;
+}
+
 // The largest centered rectangle of the picture's shape (aspect = width / height) in b
 static inline CGRect dm_aspect_fit(CGRect b, CGFloat aspect) {
     CGFloat w = b.size.width, h = b.size.height;
-    if (w <= 0 || h <= 0 || aspect <= 0) return CGRectZero;
+    if (w <= 0 || h <= 0) return CGRectZero;
+    CGFloat r = dm_view_aspect();
+    if (r <= 0) return b;
+    if (r != DM_PICTURE_16_9) aspect = r;
+    if (aspect <= 0) return CGRectZero;
     if (w / h > aspect) w = h * aspect; else h = w / aspect;
     return CGRectMake(floor(CGRectGetMidX(b) - w / 2), floor(CGRectGetMidY(b) - h / 2), w, h);
 }
@@ -26,7 +57,11 @@ static inline CGRect dm_aspect_fit(CGRect b, CGFloat aspect) {
 // its shape, so what lies outside b is cropped, never stretched. Not rounded, so it covers b exactly.
 static inline CGRect dm_aspect_fill(CGRect b, CGFloat aspect) {
     CGFloat w = b.size.width, h = b.size.height;
-    if (w <= 0 || h <= 0 || aspect <= 0) return CGRectZero;
+    if (w <= 0 || h <= 0) return CGRectZero;
+    CGFloat r = dm_view_aspect();
+    if (r <= 0) return b;
+    if (r != DM_PICTURE_16_9) aspect = r;
+    if (aspect <= 0) return CGRectZero;
     if (w / h > aspect) h = w / aspect; else w = h * aspect;
     return CGRectMake(CGRectGetMidX(b) - w / 2, CGRectGetMidY(b) - h / 2, w, h);
 }

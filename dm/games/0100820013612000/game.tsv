@@ -1,0 +1,35 @@
+# Provisional game profile (written on Windows from dm/games/profile_guess.py, not checked by hand)
+# Shady Part of Me, SDK 10, from I:\APP\ns2ios-shell\workingdir\0100820013612000_pack\extract\v131072
+
+# ---- Identity ----
+title_id	0100820013612000
+program_id	0100820013612000
+
+# ---- App ----
+name	Shady Part of Me
+ipa	ShadyPartofMe.ipa
+app_category	public.app-category.games
+
+# ---- Versions ----
+build	v131072	0.3	main=af69b83a53b4a662f383747bf3ca5083	sdk=bbc88b74cd99a89dda01ee7be4691612
+package	v131072
+shader_versions	v131072
+
+# ---- Files ----
+# every module main imports from
+modules	main sdk
+romfs_marker	data.saf
+zip_store	.bank:.saf:.metallib
+
+# ---- Memory ----
+# main sets a heap of at most the pool − 64 MB: a 3328 MB heap region
+mem_reserve	0x100000000
+mem_alias	0x10000000
+mem_stack	0x10000000
+app_pool	0xCD500000
+# the NPDM declares 0 MB of system resource: IsVirtualAddressMemoryEnabled is false, as on Horizon (Big Brain Academy: Brain vs. Brain sets a heap only then)
+sys_resource	0x0
+
+# ---- Shader split ----
+shader_groups	/=romfs
+shader_note	Shady Part of Me shaders (provisional profile)

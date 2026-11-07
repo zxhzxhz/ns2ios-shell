@@ -36,7 +36,12 @@ static void guest_main(void) {
     { void dm_guest_spawn_selftest(void); dm_guest_spawn_selftest(); }   // DM_GUEST_SPAWN_TEST self-test of host-created guest threads (hle_guestthread.c)
     { void dm_oodle_serve_maybe(int); dm_oodle_serve_maybe(1); }   // DM_OODLE_SERVE with a decoder that needs the game's malloc (LZ5, hle_oodle.c)
     { void dm_oodle_job_maybe(void); dm_oodle_job_maybe(); }   // DM_OODLE_JOB: decode a job file with the game's own Oodle and exit (hle_oodle.c, for the offline shader tools)
-    LOG(">>> nnMain"); ((fn0)req("nnMain"))();
+    // nnMain's arguments. Nintendo's crt0 hands nnMain (argc, argv) out of the process argument area, and a game may read them there
+    // instead of calling nn::os::GetHostArgc / GetHostArgv. Shady Part of Me's nnMain starts with `if (argc >= 2) strlen(argv[1]) == 14`
+    // (it looks for "--make-archive"): called with no arguments it read whatever the registers held (the address of nnMain itself as
+    // argc) and crashed in strlen on a pointer into the host's log text. The host's own argv is the game's: "game", then the profile's
+    // game_args / a "--" tail.
+    LOG(">>> nnMain"); ((fn2)req("nnMain"))((uint64_t)g_argc, (uint64_t)g_argv);
     LOG("nnMain returned");
 }
 

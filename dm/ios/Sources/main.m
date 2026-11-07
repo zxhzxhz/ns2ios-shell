@@ -58,6 +58,15 @@ static NSArray<NSString *> *romfs_document_images(NSString *doc) {
     }];
     return imgs;
 }
+// A folder the player copied into Documents wins over the same name inside the app. A split build ships the app alone and
+// the player copies <Game>-data's contents (msl/, romfs.img, aoc/) into Documents (scripts/nxn_pack.py --split-data), so
+// the shader libraries are looked up the same way the game files and the DLC already are.
+static NSString *doc_or_bundle(NSString *name) {
+    NSString *doc = NSSearchPathForDirectoriesInDomains(NSDocumentDirectory, NSUserDomainMask, YES)[0];
+    NSString *p = [doc stringByAppendingPathComponent:name]; BOOL dir = NO;
+    if ([NSFileManager.defaultManager fileExistsAtPath:p isDirectory:&dir] && dir) return p;
+    return [NSBundle.mainBundle.resourcePath stringByAppendingPathComponent:name];
+}
 static NSString *romfs_locate(NSString *prog) {   // prog: a game of several programs, the running program's folder in the app (p<N>); nil otherwise
     NSFileManager *fm = NSFileManager.defaultManager;
     NSString *doc = NSSearchPathForDirectoriesInDomains(NSDocumentDirectory, NSUserDomainMask, YES)[0];
@@ -278,7 +287,9 @@ static int boot_env(void) {
     for (NSString *d in @[@"save", @"temp", @"cheats"]) [fm createDirectoryAtPath:[doc stringByAppendingPathComponent:d] withIntermediateDirectories:YES attributes:nil error:nil];
     // Keep game files and scratch data out of device backups (Documents is backed up by default; a RomFS placed there is many GB). Saves, logs and the pipeline list stay in the backup
     // ns2ios/games/ is the several-games layout's data (a RomFS image per game): out, like romfs/ above. ns2ios/saves/ stays in, as save/ does.
-    for (NSString *d in [@[@"romfs", @"aoc", @"temp", @"ns2ios/games"] arrayByAddingObjectsFromArray:[romfs_document_images(doc) valueForKey:@"lastPathComponent"]]) {
+    // msl/ holds the packed shader libraries in Documents (split builds); exclude it too.
+    for (NSString *d in [@[@"romfs", @"aoc", @"msl", @"temp", @"ns2ios/games"] arrayByAddingObjectsFromArray:[romfs_document_images(doc) valueForKey:@"lastPathComponent"]]) {
+
         NSURL *u = [NSURL fileURLWithPath:[doc stringByAppendingPathComponent:d]]; NSError *e = nil;
         if ([fm fileExistsAtPath:u.path] && ![u setResourceValue:@YES forKey:NSURLIsExcludedFromBackupKey error:&e]) fprintf(stderr, "boot: %s could not be excluded from backup: %s\n", d.UTF8String, e.localizedDescription.UTF8String);
     }
@@ -386,7 +397,8 @@ static NSString *program_env(void) {
         NSString *m = shell_game_dm(doc); if (m) return m;
     }
 #endif
-    NSString *dmdir = [res stringByAppendingPathComponent:@"dm"], *msl = [res stringByAppendingPathComponent:@"msl"], *prog = nil;
+    NSString *dmdir = [res stringByAppendingPathComponent:@"dm"], *msl = doc_or_bundle(@"msl"), *prog = nil;
+
     NSString *plist = [NSString stringWithContentsOfFile:[dmdir stringByAppendingPathComponent:@"programs.txt"] encoding:NSUTF8StringEncoding error:nil];
     if (plist) {
         NSArray *have = [plist componentsSeparatedByCharactersInSet:NSCharacterSet.whitespaceAndNewlineCharacterSet];

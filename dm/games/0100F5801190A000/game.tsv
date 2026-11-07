@@ -1,0 +1,35 @@
+# Provisional game profile (written on Windows from dm/games/profile_guess.py, not checked by hand)
+# Puyo Puyo Tetris 2, SDK 10, from I:\APP\ns2ios-shell\workingdir\0100F5801190A000_survey
+
+# ---- Identity ----
+title_id	0100F5801190A000
+program_id	0100F5801190A000
+
+# ---- App ----
+name	Puyo Puyo Tetris 2
+ipa	PuyoPuyoTetris2.ipa
+app_category	public.app-category.games
+
+# ---- Versions ----
+build	v458752	1.3.1	main=f83fbd3e1e607d153e891368927c6cde	sdk=204eaef83fe5e5617d0787c8ef01a080
+package	v458752
+shader_versions	v458752
+
+# ---- Files ----
+# every module main imports from
+modules	main sdk
+romfs_marker	raw/ui/ui_puyo_skin.pac
+zip_store	.awb:.pac:.metallib
+
+# ---- Memory ----
+# main sets a heap of at most the pool − 64 MB: a 3328 MB heap region
+mem_reserve	0x100000000
+mem_alias	0x10000000
+mem_stack	0x10000000
+app_pool	0xCD500000
+# the NPDM declares 0 MB of system resource: IsVirtualAddressMemoryEnabled is false, as on Horizon (Big Brain Academy: Brain vs. Brain sets a heap only then)
+sys_resource	0x0
+
+# ---- Shader split ----
+shader_groups	/raw/=raw
+shader_note	Puyo Puyo Tetris 2 shaders (provisional profile)

@@ -22,9 +22,6 @@
 + dm/gfx/tools/nometal_run.py             # runs the shader chain without Apple's compiler
 + dm/gfx/tools/gl_prebuilt.py              # a LOVE game's GLSL from its own files: what DM_GL_CAPTURE would have written
 + dm/ios/Sources/CheatsView.swift          # the launcher's Cheats section: paste the codes, switch the entries on (no settings row: the list is not known until the text is parsed)
-+ dm/ios/Sources/Library.swift             # the game library page of an app that holds several games (DmGame<tid>.framework per game)
-+ dm/ios/tools/default-background.jpg     # the library's default background, copied into Gen/dm by shell_build.sh
-+ dm/ios/tools/app-icon.png               # the shell's own home-screen icon (1024x1024), put in the asset catalog by shell_build.sh
 + dm/ios/Sources/dm_shader_prep.m         # first-launch shader compilation page
 + dm/ios/Sources/dm_shader_learn.h        # what the host learns about a shader's output types, from a refused pipeline
 + dm/ios/Sources/dm_shader_learn.m        # the rewrite that makes a colour output integer, and the rows it keeps
@@ -48,6 +45,10 @@
 + .shell-overlay.txt
 + .shell-base.txt
 + .shell-patches/                          # the diffs for the "~" entries below
++ dm/gfx/tools/metal_win_run.py    # Windows: the real Metal compiler behind xcrun
++ dm/ios/Sources/Library.swift
++ dm/ios/tools/default-background.jpg
++ dm/ios/tools/app-icon.png               # the shell's own home-screen icon (1024x1024), put in the asset catalog by shell_build.sh
 
 # --- modified (patched onto upstream) ---
 
@@ -76,10 +77,13 @@
 ~ dm/tools/shader_cache.py      # os.replace retries a Windows sharing violation: the store writes each metallib to the cache, and a scanner holding the destination fails the rename
 ~ dm/ios/Sources/main.m         # modules from the Guest library, relaxed romfs lookup, shader preparation before the host
 ~ dm/ios/Sources/Launcher.swift # the Cheats section in the settings list (its view: dm/ios/Sources/CheatsView.swift)
-~ dm/ios/Sources/LauncherSettings.swift # saved choices under a per-game key when the app holds several games
 ~ dm/ios/Sources/front_ios.m     # reads the cheats switches again when Play is pressed: the host loads at launch, before the screen
 ~ dm/ios/Sources/DmGamepad.m    # profile pad_layout overridable at run time (DM_PAD_LAYOUT), for the first launch only
-~ dm/ios/tools/pack_ipa.py      # keep the executable bit when packing on Windows; a big file is deflated in 16 MB blocks by the pool
+~ dm/ios/tools/pack_ipa.py      # keep the executable bit when packing on Windows
+~ dm/gfx/tools/unityfs.py     # Unity 2021.3.33-38f1 stripped Shader layout (SHADER_2021_3)
+~ dm/host/hle_fs.c            # the RAM disk device (nn::fs::MountRamDisk)
+~ dm/ios/Sources/DmLayout.h   # DM_VIEW_ASPECT widescreen layout
+~ dm/ios/Sources/LauncherSettings.swift
 
 # --- local only: not part of the assembled tree, and not drift ---
 
@@ -93,7 +97,6 @@
 ! scripts/restore_mac_shader_marks.py
 ! scripts/basemove
 ! scripts/tests
-! scripts/shell_game_pack.py            # lays a packed game out as one DmGame<tid>.framework + ns2ios/games/<tid>/ (the several-games layout, stage 1)
 ! packer
 ! docs/CAPTURE.md
 ! docs/CAPTURE.zh-CN.md
@@ -117,6 +120,52 @@
 ! dm/games/0100606026F12000/game.tsv
 ! dm/games/01006C300E9F0000/game.tsv
 ! dm/games/0100F43008C44000/game.tsv
+
+
+# Game profiles packed into this fork's IPAs: local packing archives, not part of the assembled
+# shell (which compiles against the neutral placeholder at dm/games/0000000000000000/).
+! dm/games/010003B027152000
+! dm/games/010008000C8F6000
+! dm/games/010008A021BF4000
+! dm/games/010009C01DDDA000
+! dm/games/01000B900D8B0000
+! dm/games/01000BA01D500000
+! dm/games/010010701FB5E000
+! dm/games/010012301932A000
+! dm/games/01001AD01ABE8000
+! dm/games/01001BA027DD8000
+! dm/games/010031101A490000
+! dm/games/010032C01C4C0000
+! dm/games/01003A10208FA000
+! dm/games/01003F80212D8000
+! dm/games/010047700D540000
+! dm/games/01006DC020DB8000
+! dm/games/01006E001823C000
+! dm/games/010071B00F63A000
+! dm/games/010076202629E000
+! dm/games/0100820013612000
+! dm/games/01009DE014D6E000
+! dm/games/0100A650179CA000
+! dm/games/0100A9C0134DE000
+! dm/games/0100B1F023E08000
+! dm/games/0100B2401D2A8000
+! dm/games/0100B4001F81C000
+! dm/games/0100B4101459A000
+! dm/games/0100B4D023D4C000
+! dm/games/0100BF2019B98000
+! dm/games/0100D11022B68000
+! dm/games/0100D29019BE4000
+! dm/games/0100E62024012000
+! dm/games/0100E7B016778000
+! dm/games/0100EB500D92E000
+! dm/games/0100F5801190A000
+
+# Host/GPU tests and the lint baseline: nxnative's copies differ because this tree follows
+# xinerqu upstream, which moved them after the 865cc35f base; none is in the shell.
+! dm/gfx/tests
+! dm/host/tests
+! dm/tools/lint_c_baseline.tsv
+! scripts/shell_game_pack.py
 
 # --- dropped: upstream has it, this fork does not carry it ---
 # (none yet; `git rm` the file and add a line here when something is only ever upstream's)

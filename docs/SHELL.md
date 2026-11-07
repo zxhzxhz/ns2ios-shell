@@ -149,6 +149,44 @@ git -C up apply --check /tmp/xxx.patch
 All of this happens in CI. On Windows it shows up as nothing but a new shell zip: same command, same flags, same Python
 dependencies.
 
+## Widescreen (Hor+), and the two switches that make it testable
+
+A Switch game reaches the phone's screen through three layers, and only two of them belong to the host. The third is the game's own
+`main`, which is why a real Hor+ port still needs a rewriter cut and is not something an environment variable can do:
+
+| Layer | Where | Switch |
+|---|---|---|
+| The iOS view the game draws into | `dm/ios/Sources/DmLayout.h`, `dm_aspect_fit` | `DM_VIEW_ASPECT` |
+| The Metal present onto that view's canvas | `dm/gfx/nvn/nvn_mtl.m`, `present_viewport` | `DM_PRESENT_FIT`, `DM_PRESENT_FIT_TOL` |
+| The game's own docked resolution and camera ratio | the game's `main`, as immediates | nothing here: a `patches.py` cut, keyed by build |
+
+- `DM_VIEW_ASPECT` unset is 16:9, upstream's layout: the largest centred 16:9 rectangle, black bars in the rest. `full` makes the
+  game's view the whole screen (no letterbox, no crop), which is only right together with the present side; `19.5:9` or `2.1667` fits
+  another shape instead.
+- `DM_PRESENT_FIT` unset is `auto`: the canvas is filled when the picture's ratio is within `DM_PRESENT_FIT_TOL` (1 % by default) of
+  it. That tolerance is what makes a docked 1952x900 picture fill a 2868x1320 screen (0.18 % apart) with no game patch at all.
+  `full` stretches the picture to the canvas; `letterbox` never fills, which is the control case for comparing against a 16:9 game on
+  the same phone. `auto` is the normal route; `full` is the one-minute check that tells you whether the game's geometry and UI survive
+  a wide picture before anyone spends a day on its immediates.
+
+Both are read through `Documents/env.txt` (or the bundle's `dm/env.txt`), the file every other switch uses. The shell is prebuilt and
+the same IPA runs on phones of different shapes, so the picture's shape cannot be a profile key: a profile is baked at packing time,
+on a PC, for a screen that PC has never seen. Both names also stay clear of the `DM_NVN_` / `DM_TEST_` prefixes that player builds
+drop from that file (`dm/ios/Sources/player_env.h`) — a wide picture is a player-facing choice, not a diagnostic.
+
+Two things this is not. `DM_PICTURE_FIT=fill` crops a 16:9 picture so it covers the screen; it never widens what the game renders, so
+a game already widened at the third layer gains nothing from it and has nothing to crop. And `DM_PRESENT_FIT=full` alone is not a
+port: the game still renders 16:9, so the picture is stretched (circles become ellipses) — it is a test, not a setting to ship.
+
+The picture and the touch mapping come from one function: `DmGamepad.m` normalizes touches on `dm_aspect_fit`'s rectangle through
+`dm_game_touch_point`, so a wide view cannot be laid out in one place and touched in another. A TV still gets 16:9 (the fitted
+rectangle of the TV's own bounds), so `full` changes nothing there.
+
+One result of that pairing is worth knowing in advance: with the game still rendering 16:9, `DM_VIEW_ASPECT=full` alone looks
+exactly like the default — the present shrinks the picture back to a 16:9 band (2347 px wide on a 2868 px screen). That is the
+expected result, not a broken switch: the view side is ready and the game side is not. Flip `DM_PRESENT_FIT=full` to see the same
+frame stretched, which is what tells the two apart in a screenshot.
+
 ## The contract between the shell and the packer
 
 They are built separately, so one thing has to line up: the rewriter (`patch_nso.py`) writes call sites into the game's

@@ -1,0 +1,25 @@
+# kind: evidence  Cadence of Hyrule shaders (provisional profile) (BNSH / BAHS in RomFS + main) → control section + code area keys (dm/gfx/tools/shader_split.py)
+# column 5 records where each key first appears; no PC shader pairing supplied
+package	index	stage	dm_ctl_sha16	source
+vs_main.bin	0	vertex	bf81dc122c781790	main#BNSH@0x882000#var2
+ps_main.bin	0	pixel	dfd0f555614eb064	main#BNSH@0x882000#var4
+ps_main.bin	1	pixel	58b8c104bc3fa905	main#BNSH@0x882000#var5
+vs_main.bin	1	vertex	a936529cf487e4e0	main#BNSH@0x882000#var5
+ps_shadersbin.bin	0	pixel	306525edb2c33b29	/shaders_bin/SampleShader.bnsh#BNSH@0x0#var0
+vs_shadersbin.bin	0	vertex	fb887a08312de8ee	/shaders_bin/SampleShader.bnsh#BNSH@0x0#var0
+ps_shadersbin.bin	1	pixel	7a96509b5b78e1e7	/shaders_bin/SampleShader.bnsh#BNSH@0x0#var2
+vs_shadersbin.bin	1	vertex	3c09264d9d753273	/shaders_bin/SampleShader.bnsh#BNSH@0x0#var3
+vs_shadersbin.bin	2	vertex	0eb16f4d3875c9e7	/shaders_bin/color_shader.bnsh#BNSH@0x0#var0
+ps_shadersbin.bin	2	pixel	6129cfbafd8dfaff	/shaders_bin/color_shader.bnsh#BNSH@0x0#var0
+ps_shadersbin.bin	3	pixel	8395b6154e7222e0	/shaders_bin/ellipse_shader.bnsh#BNSH@0x0#var0
+vs_shadersbin.bin	3	vertex	fe6002a8c63f703c	/shaders_bin/ellipse_shader.bnsh#BNSH@0x0#var0
+vs_shadersbin.bin	4	vertex	6f8fb21e2e12764d	/shaders_bin/identity_shader.bnsh#BNSH@0x0#var0
+ps_shadersbin.bin	4	pixel	807916814fd1ae58	/shaders_bin/identity_shader.bnsh#BNSH@0x0#var0
+ps_shadersbin.bin	5	pixel	3a5e452896edee4e	/shaders_bin/movie_shader.bnsh#BNSH@0x0#var0
+vs_shadersbin.bin	5	vertex	3c939e0eb3f69b2d	/shaders_bin/movie_shader.bnsh#BNSH@0x0#var0
+ps_shadersbin.bin	6	pixel	177aad7447073953	/shaders_bin/shadow_shader.bnsh#BNSH@0x0#var0
+vs_shadersbin.bin	6	vertex	b61b6997a5ef10c9	/shaders_bin/shadow_shader.bnsh#BNSH@0x0#var0
+vs_shadersbin.bin	7	vertex	cbd427fd48c5f3b2	/shaders_bin/upscale_shader.bnsh#BNSH@0x0#var0
+ps_shadersbin.bin	7	pixel	d95773bc0dcb8fd4	/shaders_bin/upscale_shader.bnsh#BNSH@0x0#var0
+ps_shadersbin.bin	8	pixel	5532b383f0a14fc3	/shaders_bin/world_shader.bnsh#BNSH@0x0#var0
+vs_shadersbin.bin	8	vertex	f14ebbcc4b536f9b	/shaders_bin/world_shader.bnsh#BNSH@0x0#var0

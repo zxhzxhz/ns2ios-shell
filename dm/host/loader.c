@@ -770,6 +770,9 @@ int dm_shell_modules(const char **out, int max) {
                 if (l < 7 || strncmp(s->sectname, "__dm", 4) || l + sizeof(struct segment_command_64) > lc->cmdsize) continue;
                 if (s->sectname[l - 2] != 'x' || s->sectname[l - 1] != '0') continue;
                 size_t nl = l - 6; if (nl > 16) continue;
+                // __dm_nro_x0 (the packed NRO sections, gen_embed.py / guest_dylib.py) would read as a module named
+                // "nro_x" and stop the loader at its missing layout; a module name never holds an underscore
+                if (memchr(s->sectname + 4, '_', nl)) continue;
                 int dup = 0; for (int j = 0; j < n; j++) if (!strncmp(ptrs[j], s->sectname + 4, nl) && !ptrs[j][nl]) dup = 1;
                 if (dup) continue;
                 memcpy(store[n], s->sectname + 4, nl); store[n][nl] = 0; ptrs[n] = store[n]; n++;

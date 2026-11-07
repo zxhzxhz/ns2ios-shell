@@ -52,6 +52,15 @@ python scripts\nxn_pack.py ..\..\..\shell-<date>-<commit>.zip D:\games\hades2 ^
 `python scripts\nxn_pack.py --help` lists every option; the window exposes the useful ones with a one-line explanation
 each. The GUI never invents anything the script cannot do.
 
+**The tools have to be the ones from that same release.** `--tools` points at the release's `tools` folder, never at
+`dm/gfx/tools/dmsh_xlate_bin`: the in-repo folder holds a Windows build of the translation chain from whatever the
+source looked like when it was committed, and the chain moves with the base — the Ampere base alone rewrote 4 376 lines
+of the Ryujinx translator and added `dmsh_ampere.py`. A translator older than the tree is refused outright
+(`the translator was not built from the in-repo source: embedded source <a> / in repo <b> (rebuild dmsh_xlate)`), and
+one that scrapes past the check translates shaders against tables this tree no longer has. Building the tree yourself
+rather than downloading a release? Make a fresh one: `dotnet publish dm/gfx/tools/dmsh_xlate -c Release -o <folder>`,
+then pass that `<folder>`.
+
 ### After the pack
 
 The **temporary files are removed as soon as the IPA is written**: the extraction, the rewritten modules, the split shaders
@@ -62,6 +71,31 @@ on the phone.
 - `--keep-work` keeps that tree, so repacking the same game skips the unpack and the translation
 - `--clean <game folder>` clears out what an earlier run left
 - a cartridge dump (`.xci`) gets a `<file>.xci.tid` next to it on the first pack, so the next one does not unpack it again
+
+### Split builds: app-only IPA + data folder (default)
+
+Every pack is a split build unless `--no-split-data` is given. The IPA carries only the app — tens of MB, so it signs and
+installs in seconds and re-signing it every 7 days with a free Apple ID costs nothing; the game's data goes to
+`<IPA>-data`:
+
+| Part | What it is | Copy it again when |
+|---|---|---|
+| `msl\` | the shader libraries (`b-<chain>.img`) | the shaders were rebuilt (a new shell or chain version) |
+| `romfs.img` | the game's own files | a new build of the same game |
+| `aoc\` | add-on content (DLC), when the game has any | the DLC changed |
+
+Install the IPA and open it once — it says the game files are missing, which is expected. Then copy the folder's contents
+into the app's Documents:
+
+- **Windows**: *Apple Devices* (or iTunes) → your device → *Files* → the app → drag them in
+- **On the device**: *Files* → *On My iPhone/iPad* → the app, from a USB drive, a network share or iCloud Drive
+
+Close the app fully and open it again. Re-signing the IPA later leaves Documents alone, so the data is copied **once per
+build of the game**, not once per re-sign. The three parts are separate files, so a rebuilt shader library can be copied on
+its own without touching the many-GB game files. `split.tsv` in the folder names the game and the chain version it was
+built for; the app refuses libraries from another chain version and says so in the log.
+
+`--split-data DIR` puts the folder elsewhere; `--no-split-data` builds one IPA with everything inside, as before.
 
 ## Cheats (Atmosphère format)
 
@@ -211,6 +245,81 @@ mark in the supported list.
 > Apple silicon Mac, while the group above is the other way round: the phone captures and Windows packs, no Mac at all.
 
 Every other game on the supported list packs and plays from its own files, LÖVE and Vulkan titles included.
+
+## Memory budget: pack for the device, not for the Switch
+
+`profile_guess.py` and every hand-made profile size the guest for a 4 GB Switch — `app_pool 0xCD500000` (3,285 MiB), and
+a 5 GB block on the virtual-address-memory path. That stays the right default: an IPA whose entitlement was dropped
+(Sideloadly, an old SideStore) runs under iOS's 3,375 MB cap, and a bigger pool only gets the game killed sooner. On a
+device that does keep the entitlement and has the RAM, those same numbers leave 4–6 GB unused. So the pack follows the
+device it is for:
+
+| Target device | `mem_reserve` | `app_pool` | Rule |
+|---|---|---|---|
+| no entitlement (3,375 MB) | the profile's | the profile's | **never relax**: the game sizes its heap from the pool and is killed with no crash log |
+| 8 GB phone (≈6 GB available) | the profile's | the profile's | leave it — the physical headroom does not hold a bigger pool |
+| 12–16 GB, `increased-memory-limit` only | `0x180000000` (6 GB) | `0x110000000` (4.25 GB) | the standard relaxation, for heap-setting games |
+| 16 GB, with `extended-virtual-addressing` | up to `0x280000000` (10 GB) | per the layout table | private packages only: EVA is a paid-account entitlement and the shell does not request it |
+
+Read the device, not the model: `boot: memory limit N MB` in `Documents/log.txt` says which row applies (about
+3,375 MB = no entitlement, 6 GB and up = in effect), and `[nvn-mtl] memory up to frame N … headroom to the system memory
+limit` says how much of it the game actually needs.
+
+### Keep the partition consistent
+
+The guest block is one `mmap` (`hle_svc.c` `mem_init`), partitioned front / alias / stack / heap, and the heap region is
+whatever is left:
+
+```
+0x10000000 (front) + mem_alias + mem_stack + heap region == mem_reserve
+app_pool ≤ heap region
+```
+
+Both are checked at run time: a pool larger than the heap region makes `SetHeapSize` return `0xD001` and
+`nninitStartup` aborts, and a `mem_reserve` past 6 GB without EVA dies at `reserve guest AS` — one line in the log,
+before the game starts.
+
+### The two layouts
+
+`sys_resource` in the game's profile is the switch: non-zero means virtual address memory, and such a game maps its own
+address regions in the alias region, often without ever setting a heap.
+
+| Key | Heap-setting game, 6 GB | Heap-setting game, 8 GB (EVA) | Virtual address memory, unchanged | Virtual address memory, 10 GB (EVA) |
+|---|---|---|---|---|
+| `mem_reserve` | `0x180000000` | `0x200000000` | `0x140000000` | `0x280000000` |
+| `mem_alias` | `0x40000000` | `0x40000000` | `0x118000000` | `0x140000000` |
+| `mem_stack` | `0x10000000` | `0x10000000` | `0x10000000` | `0x10000000` |
+| `app_pool` | `0x110000000` | `0x180000000` | the profile's | `0x100000000` |
+| heap region (derived) | 4.5 GB | 6.5 GB | 128 MB | 4.5 GB |
+
+At 6 GB a virtual-address-memory game has nothing to give: its alias region alone is 4.375 GB on Engage's profile, so
+relaxing the block for it means cutting the alias region under 1 GB, which aborts it in
+`StandardAllocator::Initialize`. Those games get more room only with EVA (the last column).
+
+`0x110000000` is exactly the heap region of the 6 GB block — the ceiling of the formula above, not a value with slack.
+
+### Do not relax these
+
+- **Unreal 4.26+ with an NPDM system resource** (`mem_reserve 0x1028000000`, `mem_alias 0x1000000000`): its
+  `FMallocBinned3` reserves 37 GB of the 62 GB region, which no block size a phone can reserve will hold. This
+  fork's rewriter cuts the allocator itself (`dm/tools/ue_malloc.py`), so what such a game still needs is the capped
+  address region (game_args, as Octopath Traveler 0's profile does), not a bigger block.
+- **Tears of the Kingdom / Breath of the Wild**: an 8 GB alias region was measured to move the high-water mark without
+  removing the shortage. Relax their `app_pool` if anything, not the alias region.
+- **Profiles with `mem_map_limit on`** (Pokémon Legends: Z-A): the pool also caps `MapPhysicalMemory`, so a bigger pool
+  relaxes that limit too and drives the footprint into the jetsam kill the game was avoiding.
+
+### Where the values go
+
+The packer writes `mem_reserve` / `mem_alias` / `mem_stack` / `app_pool` from `dm/games/<title ID>/game.tsv` into the
+app's `dm/env.txt` as `DM_MEM_RESERVE` / `DM_MEM_ALIAS` / `DM_MEM_STACK` / `DM_APP_POOL` (`nxn_pack.py`), and the host
+reads them at start. So relax in the profile before packing; to try a layout on a device without repacking, put the same
+`DM_*` lines in `Documents/env.txt`, which wins over the bundle's copy. Then check:
+
+```
+[mem] guest AS 0x… +0x180000000  heap … alias … stack …   → the block the host reserved
+[mem] heap 4.19 GB (heap region 4.50 GB)                  → what the game asked for, and what it could have had
+```
 
 ## Notes and caveats
 

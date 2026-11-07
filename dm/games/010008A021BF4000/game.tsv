@@ -1,0 +1,35 @@
+# Provisional game profile (written on Windows from dm/games/profile_guess.py, not checked by hand)
+# CONERU -DIMENSION GIRL-, SDK 18, from I:\APP\ns2ios-shell\work-tmp\coneru_survey
+
+# ---- Identity ----
+title_id	010008A021BF4000
+program_id	010008A021BF4000
+
+# ---- App ----
+name	CONERU -DIMENSION GIRL-
+ipa	CONERUDIMENSIONGIRL.ipa
+app_category	public.app-category.games
+
+# ---- Versions ----
+build	v393216	1.6.0	main=d0fad1be25a2337931a962657e4e5013	subsdk0=14765b1d77b12d8654ea87a61c65e2b1	sdk=f118ae1c2e7728471aaf1a0d58484968
+package	v393216
+shader_versions	v393216
+
+# ---- Files ----
+# every module main imports from
+modules	main subsdk0 sdk
+romfs_marker	Data/sharedassets37.assets.resS
+zip_store	.assets:.dat:.resource:.ress:.metallib
+
+# ---- Memory ----
+# the NPDM declares 16 MB of system resource (virtual address memory) and main sets a heap: a 5 GB block with a large alias region; the heap check sizes the heap region from the heap the game asks for
+mem_reserve	0x210000000
+mem_alias	0x1C0000000
+mem_stack	0x10000000
+app_pool	0xCD500000
+# the NPDM declares 16 MB of system resource
+sys_resource	0x1000000
+
+# ---- Shader split ----
+shader_groups	/Data/=data
+shader_note	CONERU -DIMENSION GIRL- shaders (provisional profile)

@@ -23,7 +23,6 @@ static void fill(id<MTLTexture> t, MTLClearColor c) {
 }
 static int matches(id<MTLTexture> t, const float inside[4], MTLRegion region, const float outside[4]) {   // allow HDR scaler rounding on each channel
     NSUInteger n = t.width * t.height; id<MTLBuffer> b = [g_dev newBufferWithLength:n * 8 options:MTLResourceStorageModeShared];
-    if (!b) { fprintf(stderr, "readback buffer did not allocate\n"); return 0; }
     id<MTLCommandBuffer> cb = q_cb(); id<MTLBlitCommandEncoder> e = [cb blitCommandEncoder];
     [e copyFromTexture:t sourceSlice:0 sourceLevel:0 sourceOrigin:MTLOriginMake(0, 0, 0) sourceSize:MTLSizeMake(t.width, t.height, 1) toBuffer:b destinationOffset:0 destinationBytesPerRow:t.width * 8 destinationBytesPerImage:n * 8];
     [e endEncoding]; [cb commit]; [cb waitUntilCompleted];
